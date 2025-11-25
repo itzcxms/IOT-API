@@ -1,24 +1,24 @@
-import { Router } from "express";
-import bcrypt from "bcrypt";
-import User from "../models/User.js";
-import Role from "../models/Role.js";
-import { auth } from "../middleware/auth.js";
-import { requirePermission } from "../middleware/requirePermission.js";
+const { Router } = require( "express");
+const bcrypt = require( "bcrypt");
+const User = require( "../models/User.js");
+const Role = require( "../models/Role.js");
+const auth = require( "../middleware/auth.js");
+const requirePermission = require( "../middleware/requirePermission.js");
 
 const router = Router();
+module.exports = router;
 
 // GET /api/users
-router.get("/", auth, requirePermission("users.read"), async (req, res) => {
+router.get("/all", auth, requirePermission("users.read"), async (req, res) => {
     const users = await User.find()
         .select("-password")
         .populate("role_id")
         .sort({ createdAt: -1 });
-
     res.json(users);
 });
 
 // GET /api/users/:id
-router.get("/:id", auth, requirePermission("users.read"), async (req, res) => {
+router.get("/view/user/:id", auth, requirePermission("users.read"), async (req, res) => {
     const user = await User.findById(req.params.id)
         .select("-password")
         .populate("role_id");
@@ -28,7 +28,7 @@ router.get("/:id", auth, requirePermission("users.read"), async (req, res) => {
 });
 
 // POST /api/users
-router.post("/", auth, requirePermission("users.create"), async (req, res) => {
+router.post("/create", auth, requirePermission("users.create"), async (req, res) => {
     try {
         const { nom, prenom, email, password, role_id, actif } = req.body;
 
@@ -51,7 +51,7 @@ router.post("/", auth, requirePermission("users.create"), async (req, res) => {
 });
 
 // PUT /api/users/:id
-router.put("/:id", auth, requirePermission("users.update"), async (req, res) => {
+router.put("/update/user/:id", auth, requirePermission("users.update"), async (req, res) => {
     try {
         const data = { ...req.body };
 
@@ -71,10 +71,9 @@ router.put("/:id", auth, requirePermission("users.update"), async (req, res) => 
 });
 
 // DELETE /api/users/:id
-router.delete("/:id", auth, requirePermission("users.delete"), async (req, res) => {
+router.delete("/delete/user/:id", auth, requirePermission("users.delete"), async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
     res.json({ message: "Supprimé", id: user._id });
 });
 
-export default router;

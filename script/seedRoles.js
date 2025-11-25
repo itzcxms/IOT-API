@@ -1,10 +1,10 @@
 // scripts/seedRbac.js
-import dotenv from "dotenv";
-import mongoose from "mongoose";
+const dotenv = require ("dotenv");
+const mongoose = require("mongoose");
 
-import Role from "../models/Role.js";
-import Permission from "../models/Permission.js";
-import RolePermission from "../models/RolePermission.js";
+const Role = require ("../models/Role.js");
+const Permission = require ("../models/Permission.js");
+const RolePermission = require ("../models/RolePermission.js");
 
 dotenv.config();
 
@@ -34,6 +34,17 @@ async function seedRBAC() {
     // 2) PERMISSIONS
     const permissionsData = [
       { name: "Waiting permissions...", value: "wait.perms", actif: true },
+        { name: "Waiting permissions...1", value: "wait.perms1", actif: true },
+        { name: "Waiting permissions...2", value: "wait.perms2", actif: true },
+        { name: "Waiting permissions...3", value: "wait.perms3", actif: true },
+        { name: "Waiting permissions...4", value: "wait.perms4", actif: true },
+        { name: "Waiting permissions...5", value: "wait.perms5", actif: true },
+        { name: "Waiting permissions...6", value: "wait.perms6", actif: true },
+        { name: "Waiting permissions...7", value: "wait.perms7", actif: true },
+        { name: "Waiting permissions...8", value: "wait.perms8", actif: true },
+        { name: "Waiting permissions...9", value: "wait.perms9", actif: true },
+        { name: "Waiting permissions...10", value: "wait.perms10", actif: true },
+        { name: "Waiting permissions...11", value: "wait.perms11", actif: true },
     ];
 
     const permDocs = [];

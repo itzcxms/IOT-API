@@ -1,4 +1,4 @@
-export function requirePermission(value) {
+function requirePermission(value) {
     return (req, res, next) => {
         if (!req.user) return res.status(401).json({ message: "Non authentifié" });
 
@@ -8,3 +8,5 @@ export function requirePermission(value) {
         next();
     };
 }
+
+module.exports = requirePermission;

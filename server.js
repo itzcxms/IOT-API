@@ -1,22 +1,25 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import morgan from "morgan";
-import { connectDB } from "./config/db.js";
+// server.js
 
-import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/user.routes.js";
-import roleRoutes from "./routes/role.routes.js";
-import permissionRoutes from "./routes/permission.routes.js";
+// app.js
+const express = require ("express");
+const cors = require ("cors");
+const morgan = require ("morgan");
+const dotenv = require ("dotenv");
+dotenv.config()
+const connectDB = require ("./config/db.js");
 
-dotenv.config();
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-app.get("/", (req, res) => res.json({ status: "API RBAC OK" }));
+const authRoutes = require ("./routes/auth.routes");
+const userRoutes = require ("./routes/user.routes");
+const roleRoutes = require ("./routes/role.routes");
+const permissionRoutes = require ("./routes/permission.routes");
+
+app.get("/", (req, res) => res.json({ status: "API OK" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -24,8 +27,13 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/permissions", permissionRoutes);
 
 const PORT = process.env.PORT || 3000;
-await connectDB(process.env.MONGO_URI);
-
-app.listen(PORT, () => {
-    console.log(`🚀 Server on http://localhost:${PORT}`);
-});
+connectDB(process.env.MONGO_URI)
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`🚀 Server on http://localhost:${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("Erreur de connexion à la base :", err);
+        process.exit(1);
+    });

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const rolePermissionSchema = new mongoose.Schema(
     {
@@ -10,4 +10,4 @@ const rolePermissionSchema = new mongoose.Schema(
 
 rolePermissionSchema.index({ role_id: 1, permission_id: 1 }, { unique: true });
 
-export default mongoose.model("RolePermission", rolePermissionSchema);
+module.exports = mongoose.model("RolePermission", rolePermissionSchema);

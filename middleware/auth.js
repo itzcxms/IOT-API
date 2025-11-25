@@ -1,8 +1,8 @@
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
-import RolePermission from "../models/RolePermission.js";
+const jwt = require("jsonwebtoken");
+const User = require("../models/User.js");
+const RolePermission = require("../models/RolePermission.js");
 
-export async function auth(req, res, next) {
+async function auth(req, res, next) {
     try {
         const header = req.headers.authorization;
         if (!header?.startsWith("Bearer ")) {
@@ -38,3 +38,5 @@ export async function auth(req, res, next) {
         return res.status(401).json({ message: "Token invalide" });
     }
 }
+
+module.exports = auth;
