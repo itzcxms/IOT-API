@@ -1,16 +1,14 @@
-import { Router } from "express";
-import Permission from "../models/Permission.js";
-import RolePermission from "../models/RolePermission.js";
-import { auth } from "../middleware/auth.js";
-import { requirePermission } from "../middleware/requirePermission.js";
+const { Router } = require( "express");
+const Permission = require( "../models/Permission.js");
+const RolePermission = require( "../models/RolePermission.js");
+const auth = require( "../middleware/auth.js");
+const requirePermission = require( "../middleware/requirePermission.js");
 
 const router = Router();
 
-router.get("/", auth, requirePermission("permissions.read"), async (req, res) => {
-    res.json(await Permission.find().sort({ createdAt: -1 }));
-});
+module.exports = router;
 
-router.post("/", auth, requirePermission("permissions.create"), async (req, res) => {
+router.post("/create", auth, requirePermission("permissions.create"), async (req, res) => {
     try {
         const perm = await Permission.create(req.body);
         res.status(201).json(perm);
@@ -19,7 +17,7 @@ router.post("/", auth, requirePermission("permissions.create"), async (req, res)
     }
 });
 
-router.put("/:id", auth, requirePermission("permissions.update"), async (req, res) => {
+router.put("/update/:id", auth, requirePermission("permissions.update"), async (req, res) => {
     const perm = await Permission.findByIdAndUpdate(req.params.id, req.body, {
         new: true, runValidators: true
     });
@@ -27,7 +25,7 @@ router.put("/:id", auth, requirePermission("permissions.update"), async (req, re
     res.json(perm);
 });
 
-router.delete("/:id", auth, requirePermission("permissions.delete"), async (req, res) => {
+router.delete("/delete/:id", auth, requirePermission("permissions.delete"), async (req, res) => {
     const perm = await Permission.findByIdAndDelete(req.params.id);
     if (!perm) return res.status(404).json({ message: "Permission introuvable" });
 
@@ -35,4 +33,3 @@ router.delete("/:id", auth, requirePermission("permissions.delete"), async (req,
     res.json({ message: "Permission supprimée", id: perm._id });
 });
 
-export default router;

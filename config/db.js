@@ -1,7 +1,7 @@
 // config/db.js
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-export async function connectDB(uri) {
+async function connectDB(uri) {
     try {
         mongoose.set("strictQuery", true);
 
@@ -12,3 +12,6 @@ export async function connectDB(uri) {
         process.exit(1);
     }
 }
+
+module.exports = connectDB;
+

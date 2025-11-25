@@ -1,18 +1,19 @@
-import { Router } from "express";
-import Role from "../models/Role.js";
-import RolePermission from "../models/RolePermission.js";
-import Permission from "../models/Permission.js";
-import { auth } from "../middleware/auth.js";
-import { requirePermission } from "../middleware/requirePermission.js";
+const { Router } = require( "express");
+const Role = require( "../models/Role.js");
+const RolePermission = require( "../models/RolePermission.js");
+const Permission = require( "../models/Permission.js");
+const auth = require( "../middleware/auth.js");
+const requirePermission = require( "../middleware/requirePermission.js");
 
 const router = Router();
+module.exports = router;
 
 // CRUD Roles
-router.get("/", auth, requirePermission("roles.read"), async (req, res) => {
+router.get("/all", auth, requirePermission("roles.view"), async (req, res) => {
     res.json(await Role.find().sort({ poids: 1 }));
 });
 
-router.post("/", auth, requirePermission("roles.create"), async (req, res) => {
+router.post("/create", auth, requirePermission("roles.create"), async (req, res) => {
     try {
         const role = await Role.create(req.body);
         res.status(201).json(role);
@@ -21,7 +22,7 @@ router.post("/", auth, requirePermission("roles.create"), async (req, res) => {
     }
 });
 
-router.put("/:id", auth, requirePermission("roles.update"), async (req, res) => {
+router.put("/update/role/:id", auth, requirePermission("roles.update"), async (req, res) => {
     const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
         new: true, runValidators: true
     });
@@ -29,7 +30,7 @@ router.put("/:id", auth, requirePermission("roles.update"), async (req, res) => 
     res.json(role);
 });
 
-router.delete("/:id", auth, requirePermission("roles.delete"), async (req, res) => {
+router.delete("/delete/role/:id", auth, requirePermission("roles.delete"), async (req, res) => {
     const role = await Role.findByIdAndDelete(req.params.id);
     if (!role) return res.status(404).json({ message: "Rôle introuvable" });
 
@@ -64,9 +65,7 @@ router.post("/:id/permissions", auth, requirePermission("roles.assign_permission
         res.json({ message: "Permissions ajoutées au rôle" });
     } else {
         res.json({ message: "Aucune permissions ajoutées au rôle" });
-
     }
-
 });
 
 // GET /api/roles/:id/permissions
@@ -76,4 +75,3 @@ router.get("/:id/permissions", auth, requirePermission("roles.read"), async (req
     res.json(links.map(l => l.permission_id));
 });
 
-export default router;
