@@ -8,7 +8,7 @@ const auth = require("../middleware/auth.js");
 
 const router = Router();
 
-router.post("/register", auth, requirePermission("user.create"), async (req, res) => {
+router.post("/register", auth, async (req, res) => {
     try {
         const { nom, prenom, email, password, role_id } = req.body;
 
@@ -28,7 +28,7 @@ router.post("/register", auth, requirePermission("user.create"), async (req, res
 
         if (!role) return res.status(404).json({ message: "Aucun rôle disponible" });
 
-        const hash = await bcrypt.hash(password, parseInt(process.env.SALT));
+        const hash = await bcrypt.hash(password, 15);
 
         const user = await User.create({
             nom, prenom, email, password: hash, role_id: role._id, actif: true
