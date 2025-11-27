@@ -8,7 +8,7 @@ const auth = require("../middleware/auth.js");
 
 const router = Router();
 
-router.post("/register", auth, async (req, res) => {
+router.post("/register", auth, requirePermission("admin.create"), async (req, res) => {
     try {
         const { nom, prenom, email, password, role_id } = req.body;
 
@@ -41,7 +41,6 @@ router.post("/register", auth, async (req, res) => {
         res.status(400).json({ message: e.message });
     }
 });
-
 /**
  * POST /api/auth/login
  * body: { email, password }

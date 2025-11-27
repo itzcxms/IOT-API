@@ -17,20 +17,9 @@ async function auth(req, res, next) {
             return res.status(401).json({ message: "Utilisateur invalide/inactif" });
         }
 
-        // charger permissions de son rôle
-        const links = await RolePermission.find({ role_id: user.role_id._id })
-            .populate("permission_id");
-
-        const permissions = links
-            .map(l => l.permission_id)
-            .filter(p => p?.actif)
-            .map(p => p.value);
-
         req.user = {
             id: user._id,
             email: user.email,
-            role: user.role_id,
-            permissions
         };
 
         next();

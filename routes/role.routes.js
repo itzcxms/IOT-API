@@ -9,19 +9,41 @@ const router = Router();
 module.exports = router;
 
 // CRUD Roles
-router.get("/all", auth, requirePermission("roles.view"), async (req, res) => {
+router.get("/all",auth, requirePermission("roles.view"), async (req, res) => {
     res.json(await Role.find().sort({ poids: 1 }));
 });
 
-router.post("/create", auth, requirePermission("roles.create"), async (req, res) => {
-    try {
-        const role = await Role.create(req.body);
-        res.status(201).json(role);
-    } catch (e) {
-        res.status(400).json({ message: e.message });
-    }
-});
+router.post("/create", auth, /*requirePermission("roles.create"),*/ async (req, res) => {
+        try {
+            // 1) Création du rôle
+            const role = await Role.create(req.body);
 
+            // 2) Récupération de toutes les permissions existantes
+            const permissions = await Permission.find({}, { _id: 1 });
+
+            // 3) Construction des RolePermission pour ce rôle
+            const rolePermissions = permissions.map((perm) => ({
+                role_id: role._id,
+                permission_id: perm._id,
+                actif: false
+            }));
+
+            // 4) Insertion en bulk
+            if (rolePermissions.length > 0) {
+                await RolePermission.insertMany(rolePermissions);
+            }
+
+            // 5) Réponse
+            res.status(201).json({
+                role,
+                permissions_linked: rolePermissions.length
+            });
+        } catch (e) {
+            console.error(e);
+            res.status(400).json({ message: e.message });
+        }
+    }
+);
 router.put("/update/role/:id", auth, requirePermission("roles.update"), async (req, res) => {
     const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
         new: true, runValidators: true
@@ -41,7 +63,7 @@ router.delete("/delete/role/:id", auth, requirePermission("roles.delete"), async
 // Assigner permissions à un rôle
 // POST /api/roles/:id/permissions
 // body: { permission_ids: [{"role_id","role_id","etc..."}] }
-router.post("/:id/permissions", auth, requirePermission("roles.assign_permissions"), async (req, res) => {
+router.post("/:id/permissions", auth, /*requirePermission("roles.assign_permissions"),*/ async (req, res) => {
     const { permission_ids = [] } = req.body;
     const role = await Role.findById(req.params.id);
     if (!role) return res.status(404).json({ message: "Rôle introuvable" });

@@ -9,7 +9,7 @@ const router = Router();
 module.exports = router;
 
 // GET /api/users
-router.get("/all", auth, requirePermission("users.read"), async (req, res) => {
+router.get("/all", auth, requirePermission("users.view"), async (req, res) => {
     const users = await User.find()
         .select("-password")
         .populate("role_id")
@@ -18,7 +18,7 @@ router.get("/all", auth, requirePermission("users.read"), async (req, res) => {
 });
 
 // GET /api/users/:id
-router.get("/view/user/:id", auth, requirePermission("users.read"), async (req, res) => {
+router.get("/view/user/:id", auth, requirePermission("users.view"), async (req, res) => {
     const user = await User.findById(req.params.id)
         .select("-password")
         .populate("role_id");
