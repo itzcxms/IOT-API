@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "seed:rbac": "node script/seedRoles.js",
+    "seed:rbac": "node script/seedRbac.js",
     "test": "set NODE_ENV= test && jest",
     "test:watch": "set NODE_ENV= test && jest --watchAll"
   },

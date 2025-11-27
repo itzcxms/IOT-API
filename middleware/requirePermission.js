@@ -1,5 +1,6 @@
 // middlewares/requirePermission.js
 const User = require("../models/User");
+const Role = require("../models/Role");
 const Permission = require("../models/Permission");
 const RolePermission = require("../models/RolePermission");
 
@@ -18,6 +19,15 @@ function requirePermission(permissionValue) {
 
             if (!user) {
                 return res.status(404).json({ message: "Utilisateur introuvable" });
+            }
+
+            const role = await Role.findOne()
+                .sort({ poids: -1 })
+                .select("_id")
+                .limit(1);
+
+            if(user.role_id.toString() === role._id.toString()) {
+                return next();
             }
 
             if (!user.actif) {

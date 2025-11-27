@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const permissionSchema = new mongoose.Schema(
     {
-        categorie: { type: String, required: true, unique: true, trim: true },
+        categorie: { type: String, required: true, trim: true },
         name: { type: String, required: true, unique: true, trim: true },
         value: { type: String, required: true, unique: true, trim: true }, // ex: "users.create"
     },
