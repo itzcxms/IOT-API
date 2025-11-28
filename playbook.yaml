@@ -1,0 +1,29 @@
+- name: Update GIT API
+  hosts: servers
+  tasks:
+    - name: Git pull
+      ansible.builtin.git:
+        repo: 'git@github.com:IOT-Project-3/IOT-api.git'
+        dest: ~/IOT-api
+        version: main
+        update: yes
+        force: true
+
+    - name: Build docker image
+      community.docker.docker_image:
+        name: iot-api_g3
+        build:
+          path: ~/IOT-api
+        source: build
+        force_source: true
+
+    - name: Start container appli
+      community.docker.docker_container:
+        name: g3_iot-api
+        image: iot-api_g3
+        env_file: ~/.env
+        ports:
+          - 3035:3005
+        state: started
+        recreate: true
+        restart_policy: always

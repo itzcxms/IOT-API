@@ -19,6 +19,18 @@ router.get("/all", auth, requirePermission("roles.view"), async (req, res) => {
     }
 });
 
+// GET /api/roles/all/poids/:id
+router.get("/all/poids/:id", auth, requirePermission("roles.view"), async (req, res) => {
+    const role = Role.findOne({_id: req.params.id});
+    try {
+        const roles = await Role.find({poids: role.poids}).sort({ poids: 1 });
+        res.json(roles);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: "Erreur serveur lors de la récupération des rôles" });
+    }
+});
+
 // POST /api/roles/create
 router.post("/create", auth, requirePermission("roles.create"), async (req, res) => {
     try {
@@ -152,11 +164,27 @@ router.get(
     requirePermission("roles.view_permissions"),
     async (req, res) => {
         try {
-            const links = await RolePermission.find({ role_id: req.params.id, actif: true }).populate(
+            const links = await RolePermission.find({ role_id: req.params.id }).populate(
                 "permission_id"
             );
+            let response = links.map((l) => JSON.parse(JSON.stringify(l.permission_id)));
+            let data = {};
+            for (let i = 0; i < response.length; i++) {
+                response[i]["active"] = links[i]["actif"];
+                if (!Object.keys(data).includes(response[i].categorie)) {
+                    data[response[i].categorie] = [response[i]];
+                } else {
+                    data[response[i].categorie].push(response[i]);
+                }
+            }
 
-            res.json(links.map((l) => l.permission_id));
+            const keys = Object.keys(data);
+            response = [];
+            for (let i = 0; i < keys.length; i++) {
+                response.push([keys[i], data[keys[i]]]);
+            }
+
+            res.json(response);
         } catch (e) {
             console.error(e);
             res.status(500).json({ message: "Erreur serveur lors de la récupération des permissions du rôle" });
