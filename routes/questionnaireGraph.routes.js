@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const auth = require("../middleware/auth.js");
-// const requirePermission = require("../middleware/requirePermission.js");
+const requirePermission = require("../middleware/requirePermission.js");
 
 const Questionnaire = require("../models/Questionnaire.js");
 const QuestionnaireReponse = require("../models/QuestionnaireReponse.js");
@@ -22,7 +22,7 @@ module.exports = router;
 router.get(
     "/:id/radar",
     auth,
-    // requirePermission("questionnaires.view"),
+    requirePermission("questionnaires.view"),
     async (req, res) => {
         try {
             const { id } = req.params;

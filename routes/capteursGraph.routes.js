@@ -1,10 +1,8 @@
 const { Router } = require("express");
 const auth = require("../middleware/auth.js");
-// Si tu veux protéger par permission, décommente :
-// const requirePermission = require("../middleware/requirePermission.js");
-
 const Sonde = require("../models/Sondes.js");
 const Toilette = require("../models/Toilette.js");
+const requirePermission = require("../middleware/requirePermission");
 
 const router = Router();
 module.exports = router;
@@ -123,8 +121,7 @@ function buildBaseMatch(modelType, q) {
  *  - filtres: haut, type (sonde) / occupancy (toilette)
  */
 router.get(
-    "/dates",
-        // requirePermission("capteurs.view"),
+    "/dates", auth, requirePermission("capteurs.view"),
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
