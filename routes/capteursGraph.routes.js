@@ -90,7 +90,6 @@ function buildBaseMatch(modelType, q) {
 router.get(
     "/today",
     auth,
-    requirePermission("capteurs.view"),
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
@@ -142,7 +141,6 @@ router.get(
 router.get(
     "/month/all",
     auth,
-    requirePermission("capteurs.view"),
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
@@ -201,6 +199,7 @@ router.get(
  */
 router.post(
     "/month",
+    auth,
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.body.type);
@@ -312,6 +311,7 @@ router.post(
  */
 router.get(
     "/year/all",
+    auth,
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
@@ -360,6 +360,7 @@ router.get(
  */
 router.get(
     "/year",
+    auth,
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
