@@ -57,31 +57,6 @@ function parseMonth(moisInput) {
     return null;
 }
 
-function formatYMDInTZ(dateObj) {
-    const d = new Date(dateObj);
-    if (Number.isNaN(d.getTime())) return null;
-
-    return new Intl.DateTimeFormat("en-CA", {
-        timeZone: TZ,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    }).format(d);
-}
-
-function getYearMonthInTZ(dateObj) {
-    const d = new Date(dateObj);
-    const fmt = new Intl.DateTimeFormat("fr-FR", {
-        timeZone: TZ,
-        year: "numeric",
-        month: "2-digit",
-    }).formatToParts(d);
-
-    const y = fmt.find((p) => p.type === "year")?.value;
-    const m = fmt.find((p) => p.type === "month")?.value;
-    return { year: y ? Number(y) : null, month: m ? Number(m) : null };
-}
-
 function resolveModel(type) {
     const t = (type || "sonde").toLowerCase();
     if (t === "toilette") return { model: Toilette, type: "toilette" };
@@ -120,24 +95,8 @@ router.get(
         try {
             const { model, type } = resolveModel(req.query.type);
             const baseMatch = buildBaseMatch(type, req.query);
-
-            const now = new Date();
-            const targetDay = formatYMDInTZ(req.query.date || now) || formatYMDInTZ(now);
-
             const data = await model.aggregate([
                 { $match: baseMatch },
-                {
-                    $addFields: {
-                        jourKey: {
-                            $dateToString: {
-                                date: "$createdAt",
-                                format: "%Y-%m-%d",
-                                timezone: TZ,
-                            },
-                        },
-                    },
-                },
-                { $match: { jourKey: targetDay } },
                 {
                     $group: {
                         _id: {
@@ -160,10 +119,9 @@ router.get(
                 { $sort: { heure: 1 } },
             ]);
 
-            return res.json({
-                date: targetDay,
-                donnees: data,
-            });
+            return res.json(
+                data,
+            );
         } catch (e) {
             console.error(e);
             return res.status(500).json({
@@ -231,32 +189,30 @@ router.get(
 );
 
 /**
- * GET /api/graphs/capteurs/month
- * Query:
- *  - type=sonde|toilette
- *  - annee=2026 (requis)
- *  - start=03 (mois de début, requis)
- *  - end=05 (mois de fin, requis)
+ * POST /api/graphs/capteurs/month
+ * Body:
+ *  - type: "sonde" | "toilette"
+ *  - annee: 2026 (requis)
+ *  - start: "03" (mois de début, requis)
+ *  - end: "05" (mois de fin, requis)
  *  - filtres: haut, type (sonde) / occupancy (toilette)
  *
- * Retourne: Données par jour pour la plage de mois spécifiée
+ * Retourne: Tous les jours entre start et end avec leur fréquentation
  */
-router.get(
+router.post(
     "/month",
-    auth,
-    requirePermission("capteurs.view"),
     async (req, res) => {
         try {
-            const { model, type } = resolveModel(req.query.type);
-            const baseMatch = buildBaseMatch(type, req.query);
+            const { model, type } = resolveModel(req.body.type);
+            const baseMatch = buildBaseMatch(type, req.body);
 
-            const yearNum = Number(req.query.annee);
+            const yearNum = Number(req.body.annee);
             if (!yearNum || Number.isNaN(yearNum)) {
                 return res.status(400).json({ message: "Paramètre 'annee' requis et doit être valide" });
             }
 
-            const startMonth = parseMonth(req.query.start);
-            const endMonth = parseMonth(req.query.end);
+            const startMonth = parseMonth(req.body.start);
+            const endMonth = parseMonth(req.body.end);
 
             if (!startMonth || startMonth < 1 || startMonth > 12) {
                 return res.status(400).json({ message: "Paramètre 'start' invalide (01-12)" });
@@ -270,6 +226,7 @@ router.get(
                 return res.status(400).json({ message: "Le mois de début doit être <= au mois de fin" });
             }
 
+            // Agrégation pour récupérer tous les jours entre start et end
             const data = await model.aggregate([
                 { $match: baseMatch },
                 {
@@ -278,6 +235,13 @@ router.get(
                         parts: {
                             $dateToParts: {
                                 date: "$createdAt",
+                                timezone: TZ,
+                            },
+                        },
+                        dateStr: {
+                            $dateToString: {
+                                date: "$createdAt",
+                                format: "%Y-%m-%d",
                                 timezone: TZ,
                             },
                         },
@@ -291,23 +255,35 @@ router.get(
                 },
                 {
                     $group: {
-                        _id: {
-                            month: "$parts.month",
-                            day: "$parts.day",
-                        },
+                        _id: "$dateStr",
                         frequentation: { $sum: 1 },
                     },
                 },
                 {
                     $project: {
                         _id: 0,
-                        mois: { $concat: [{ $toString: "$_id.month" }] },
-                        jour: { $concat: [{ $toString: "$_id.day" }] },
+                        date: "$_id",
                         frequentation: 1,
                     },
                 },
-                { $sort: { mois: 1, jour: 1 } },
+                { $sort: { date: 1 } },
             ]);
+
+            // Générer tous les jours entre start et end (même sans données)
+            const allDays = [];
+            for (let m = startMonth; m <= endMonth; m++) {
+                const daysInMonth = new Date(yearNum, m, 0).getDate();
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${yearNum}-${pad2(m)}-${pad2(d)}`;
+                    const existing = data.find((item) => item.date === dateStr);
+                    allDays.push({
+                        date: dateStr,
+                        jour: pad2(d),
+                        mois: pad2(m),
+                        frequentation: existing ? existing.frequentation : 0,
+                    });
+                }
+            }
 
             return res.json({
                 params: {
@@ -315,7 +291,7 @@ router.get(
                     start: monthLabel(startMonth),
                     end: monthLabel(endMonth),
                 },
-                donnees: data,
+                donnees: allDays,
             });
         } catch (e) {
             console.error(e);
@@ -336,8 +312,6 @@ router.get(
  */
 router.get(
     "/year/all",
-    auth,
-    requirePermission("capteurs.view"),
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
@@ -386,8 +360,6 @@ router.get(
  */
 router.get(
     "/year",
-    auth,
-    requirePermission("capteurs.view"),
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
