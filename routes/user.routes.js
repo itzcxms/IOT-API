@@ -23,8 +23,8 @@ router.get("/all", auth, requirePermission("users.view"), async (req, res) => {
     }
 });
 
-// GET /api/users/view/user/:id
-router.get("/view/user/:id", auth, requirePermission("users.view"), async (req, res) => {
+// GET /api/users/view/:id
+router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
             .select("-password")
@@ -77,8 +77,8 @@ router.post("/create", auth, requirePermission("users.create"), async (req, res)
     }
 });
 
-// PUT /api/users/update/user/:id
-router.put("/update/user/:id", auth, requirePermission("users.update"), async (req, res) => {
+// PUT /api/users/update/:id
+router.put("/update/:id", auth, requirePermission("users.update"), async (req, res) => {
     try {
         const data = { ...req.body };
 

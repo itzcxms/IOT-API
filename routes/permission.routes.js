@@ -9,7 +9,7 @@ const router = Router();
 module.exports = router;
 
 // GET /api/permissions/all
-router.get("/all", auth, requirePermission("permissions.view"), async (req, res) => {
+router.get("/all", async (req, res) => {
     try {
         const permissions = await Permission.find().sort({ createdAt: -1 });
         res.json(permissions);
@@ -69,7 +69,15 @@ router.post(
     }
 );
 
-// PUT /api/permissions/update/:id
+/* PUT /api/permissions/update/:id
+req.body = {
+  categorie: String,   // requis
+  description: String, // requis|default=""
+  name: String,        // requis, unique
+  value: String        // requis, unique (ex: "users.create")
+}
+
+*/
 router.put("/update/:id", auth, requirePermission("permissions.update"), async (req, res) => {
     try {
         const perm = await Permission.findByIdAndUpdate(req.params.id, req.body, {

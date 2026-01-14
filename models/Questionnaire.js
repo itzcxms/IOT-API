@@ -9,7 +9,6 @@ const questionnaireSchema = new mongoose.Schema(
                 key: { type: String, required: true },   // ex: "quest1"
                 label: { type: String, required: true }, // ex: "Propreté"
                 ordre: { type: Number, required: true }, // 1..5
-                actif: { type: Boolean, default: true },
             },
         ],
     },

@@ -9,21 +9,13 @@ const router = Router();
 module.exports = router;
 
 // GET /api/roles/all
+// récupere les roles contenant le poids entre 1 a 100 uniquement.
 router.get("/all", auth, requirePermission("roles.view"), async (req, res) => {
     try {
-        const roles = await Role.find().sort({ poids: 1 });
-        res.json(roles);
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: "Erreur serveur lors de la récupération des rôles" });
-    }
-});
+        const roles = await Role.find({
+            poids: { $gte: 1, $lte: 100 } // poids a modifier si vous voulez plus de role.
+        }).sort({ poids: 1 });
 
-// GET /api/roles/all/poids/:id
-router.get("/all/poids/:id", auth, requirePermission("roles.view"), async (req, res) => {
-    const role = Role.findOne({_id: req.params.id});
-    try {
-        const roles = await Role.find({poids: role.poids}).sort({ poids: 1 });
         res.json(roles);
     } catch (e) {
         console.error(e);
@@ -62,8 +54,15 @@ router.post("/create", auth, requirePermission("roles.create"), async (req, res)
     }
 });
 
-// PUT /api/roles/update/role/:id
-router.put("/update/role/:id", auth, requirePermission("roles.update"), async (req, res) => {
+/* PUT /api/roles/update/:id
+req.body = {
+  "name": "Admin",
+  "description": "Accès complet",
+  "poids": 10,
+  "permissions": ["<permissionId1>", "<permissionId2>"]
+}
+ */
+router.put("/update/:id", auth, requirePermission("roles.update"), async (req, res) => {
     try {
         const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -81,8 +80,8 @@ router.put("/update/role/:id", auth, requirePermission("roles.update"), async (r
     }
 });
 
-// DELETE /api/roles/delete/role/:id
-router.delete("/delete/role/:id", auth, requirePermission("roles.delete"), async (req, res) => {
+// DELETE /api/roles/delete/:id
+router.delete("/delete/:id", auth, requirePermission("roles.delete"), async (req, res) => {
     try {
         const role = await Role.findByIdAndDelete(req.params.id);
 

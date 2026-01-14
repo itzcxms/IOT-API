@@ -28,14 +28,14 @@ function pad2(n) {
     return String(n).padStart(2, "0");
 }
 
-// Format EXACT comme ton JSON exemple pour ListeMoisPossibles:  "'Mars' || '03'"
+// Format EXACT comme ton JSON exemple pour ListeMoisPossibles:  "03"
 function monthListLabel(monthNumber) {
-    return `'${MONTHS_FR[monthNumber - 1]}' || '${pad2(monthNumber)}'`;
+    return `${pad2(monthNumber)}`;
 }
 
-// Format EXACT comme ton JSON exemple pour params/données:  “Mars” || “03”
+// Format EXACT comme ton JSON exemple pour params/données:  “03”
 function monthParamsLabel(monthNumber) {
-    return `“${MONTHS_FR[monthNumber - 1]}” || “${pad2(monthNumber)}”`;
+    return `${pad2(monthNumber)}`;
 }
 
 function stripAccentsLower(s) {
@@ -115,9 +115,9 @@ function buildBaseMatch(modelType, q) {
  * GET /api/graphs/capteurs/dates
  * Query:
  *  - type=sonde|toilette
- *  - date=YYYY-MM-DD (ou ISO) => "Aujourd’hui"
+ *  - date=YYYY-MM-DD (ou ISO) => "Today"
  *  - annee=2024
- *  - mois=01..12 ou "Janvier".."Décembre"
+ *  - mois=01..12
  *  - filtres: haut, type (sonde) / occupancy (toilette)
  */
 router.get(
@@ -279,17 +279,17 @@ router.get(
 
             // Réponse EXACTE (mêmes clés) que ton JSON
             return res.json({
-                "Aujourd'Hui": aujourdHui,
-                "ListeMoisPossibles": ListeMoisPossibles,
-                "Mois": {
+                "Today": aujourdHui,
+                "ListOfMonth": ListeMoisPossibles,
+                "Month": {
                     params: {
                         annee: yearNum,
                         mois: monthParamsLabel(monthNum),
                     },
                     donnees: moisDonnees,
                 },
-                "ListeAnneesPossibles": ListeAnneesPossibles,
-                "Annee": {
+                "ListOfYear": ListeAnneesPossibles,
+                "Year": {
                     annee: yearNum,
                     donnees: anneeDonnees,
                 },

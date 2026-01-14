@@ -4,9 +4,6 @@ const questionnaireReponseSchema = new mongoose.Schema(
     {
         questionnaire_id: { type: mongoose.Schema.Types.ObjectId, ref: "Questionnaire", required: true },
 
-        // optionnel : si tu veux lier à un user
-        user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-
         reponses: [
             {
                 question: { type: String, required: true }, // "quest1"
