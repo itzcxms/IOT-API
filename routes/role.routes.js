@@ -10,7 +10,7 @@ module.exports = router;
 
 // GET /api/roles/all
 // récupere les roles contenant le poids entre 1 a 100 uniquement.
-router.get("/all", auth, requirePermission("roles.view"), async (req, res) => {
+router.get("/all", async (req, res) => {
     try {
         const roles = await Role.find({
             poids: { $gte: 1, $lte: 100 } // poids a modifier si vous voulez plus de role.
@@ -26,7 +26,7 @@ router.get("/all", auth, requirePermission("roles.view"), async (req, res) => {
 // POST /api/roles/create
 router.post("/create", auth, requirePermission("roles.create"), async (req, res) => {
     try {
-        // 1) Création du rôle
+        // 1) Création du rôleZ
         const role = await Role.create(req.body);
 
         // 2) Récupération de toutes les permissions existantes
@@ -105,8 +105,8 @@ router.delete("/delete/:id", auth, requirePermission("roles.delete"), async (req
  */
 router.post(
     "/:id/permissions",
-    auth,
-    requirePermission("roles.assign_permissions"),
+    // auth,
+    // requirePermission("roles.assign_permissions"),
     async (req, res) => {
         try {
             const { permission_ids = [] } = req.body;

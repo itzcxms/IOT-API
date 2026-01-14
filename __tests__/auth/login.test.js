@@ -35,7 +35,7 @@ describe("POST /api/auth/login", () => {
             .send({ email: "test@test.com", password: "123456" });
 
         expect(res.statusCode).toBe(401);
-        expect(res.body).toEqual({ message: "Identifiants ou Mot de passe invalides" });
+        expect(res.body).toEqual({ message: "Identifiants ou mot de passe invalides" });
     });
 
     test("200 + token si tout est bon", async () => {
@@ -68,6 +68,16 @@ describe("POST /api/auth/login", () => {
         expect(res.body).toEqual({
             token: "access-token",
             refreshToken: "refresh-token",
+            user: {
+                "id": fakeUser._id,
+                "email": fakeUser.email,
+                "nom": fakeUser.nom,
+                "prenom": fakeUser.prenom,
+                "role": {
+                    "_id": fakeUser.role_id._id,
+                    "name": fakeUser.role_id.name
+                },
+            }
         });
     });
 });

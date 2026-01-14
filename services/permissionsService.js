@@ -5,8 +5,6 @@ const Role = require("../models/Role.js");
 async function hasPermActive(roleId, permissionValue) {
     const role = await Role.findById(roleId).populate("permissions");
 
-    console.log("ps: ", role);
-
     if (!role) return false;
 
     return role.permissions.some(

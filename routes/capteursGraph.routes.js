@@ -28,13 +28,7 @@ function pad2(n) {
     return String(n).padStart(2, "0");
 }
 
-// Format EXACT comme ton JSON exemple pour ListeMoisPossibles:  "03"
-function monthListLabel(monthNumber) {
-    return `${pad2(monthNumber)}`;
-}
-
-// Format EXACT comme ton JSON exemple pour params/données:  “03”
-function monthParamsLabel(monthNumber) {
+function monthLabel(monthNumber) {
     return `${pad2(monthNumber)}`;
 }
 
@@ -63,12 +57,10 @@ function parseMonth(moisInput) {
     return null;
 }
 
-// Renvoie "YYYY-MM-DD" dans le fuseau Europe/Paris
 function formatYMDInTZ(dateObj) {
     const d = new Date(dateObj);
     if (Number.isNaN(d.getTime())) return null;
 
-    // en-CA => "YYYY-MM-DD"
     return new Intl.DateTimeFormat("en-CA", {
         timeZone: TZ,
         year: "numeric",
@@ -112,77 +104,27 @@ function buildBaseMatch(modelType, q) {
 }
 
 /**
- * GET /api/graphs/capteurs/dates
+ * GET /api/graphs/capteurs/today
  * Query:
  *  - type=sonde|toilette
- *  - date=YYYY-MM-DD (ou ISO) => "Today"
- *  - annee=2024
- *  - mois=01..12
+ *  - date=YYYY-MM-DD (optionnel, par défaut aujourd'hui)
  *  - filtres: haut, type (sonde) / occupancy (toilette)
+ *
+ * Retourne: Données par heure pour la journée ciblée
  */
 router.get(
-    "/dates", auth, requirePermission("capteurs.view"),
+    "/today",
+    auth,
+    requirePermission("capteurs.view"),
     async (req, res) => {
         try {
             const { model, type } = resolveModel(req.query.type);
             const baseMatch = buildBaseMatch(type, req.query);
 
-            // Defaults (Paris)
             const now = new Date();
-            const { year: defaultYear, month: defaultMonth } = getYearMonthInTZ(now);
+            const targetDay = formatYMDInTZ(req.query.date || now) || formatYMDInTZ(now);
 
-            const targetDay =
-                formatYMDInTZ(req.query.date || now) || formatYMDInTZ(now);
-
-            const yearNum = req.query.annee ? Number(req.query.annee) : defaultYear;
-            if (!yearNum || Number.isNaN(yearNum)) {
-                return res.status(400).json({ message: "Paramètre 'annee' invalide" });
-            }
-
-            const monthNum =
-                parseMonth(req.query.mois) ?? (defaultMonth || 1);
-
-            if (!monthNum || monthNum < 1 || monthNum > 12) {
-                return res.status(400).json({ message: "Paramètre 'mois' invalide" });
-            }
-
-            // 1) Années + Mois disponibles (par année)
-            const yearMonthRows = await model.aggregate([
-                { $match: baseMatch },
-                {
-                    $project: {
-                        parts: {
-                            $dateToParts: {
-                                date: "$createdAt",
-                                timezone: TZ,
-                            },
-                        },
-                    },
-                },
-                {
-                    $group: {
-                        _id: { year: "$parts.year", month: "$parts.month" },
-                    },
-                },
-                { $sort: { "_id.year": 1, "_id.month": 1 } },
-            ]);
-
-            const ListeMoisPossibles = {};
-            const yearSet = new Set();
-
-            for (const r of yearMonthRows) {
-                const y = String(r._id.year);
-                const m = Number(r._id.month);
-
-                yearSet.add(y);
-                if (!ListeMoisPossibles[y]) ListeMoisPossibles[y] = [];
-                ListeMoisPossibles[y].push(monthListLabel(m));
-            }
-
-            const ListeAnneesPossibles = Array.from(yearSet).sort();
-
-            // 2) Aujourd’hui (par heure)
-            const aujourdHui = await model.aggregate([
+            const data = await model.aggregate([
                 { $match: baseMatch },
                 {
                     $addFields: {
@@ -212,14 +154,123 @@ router.get(
                     $project: {
                         _id: 0,
                         heure: "$_id",
-                        "frequentation": "$frequentationTmp",
+                        frequentation: "$frequentationTmp",
                     },
                 },
                 { $sort: { heure: 1 } },
             ]);
 
-            // 3) Mois (par jour)
-            const moisDonnees = await model.aggregate([
+            return res.json({
+                date: targetDay,
+                donnees: data,
+            });
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({
+                message: "Erreur serveur lors de la récupération des données journalières",
+            });
+        }
+    }
+);
+
+/**
+ * GET /api/graphs/capteurs/month/all
+ * Query:
+ *  - type=sonde|toilette
+ *  - filtres: haut, type (sonde) / occupancy (toilette)
+ *
+ * Retourne: Liste de tous les mois disponibles groupés par année
+ */
+router.get(
+    "/month/all",
+    auth,
+    requirePermission("capteurs.view"),
+    async (req, res) => {
+        try {
+            const { model, type } = resolveModel(req.query.type);
+            const baseMatch = buildBaseMatch(type, req.query);
+
+            const yearMonthRows = await model.aggregate([
+                { $match: baseMatch },
+                {
+                    $project: {
+                        parts: {
+                            $dateToParts: {
+                                date: "$createdAt",
+                                timezone: TZ,
+                            },
+                        },
+                    },
+                },
+                {
+                    $group: {
+                        _id: { year: "$parts.year", month: "$parts.month" },
+                    },
+                },
+                { $sort: { "_id.year": 1, "_id.month": 1 } },
+            ]);
+
+            const listeMoisPossibles = {};
+
+            for (const r of yearMonthRows) {
+                const y = String(r._id.year);
+                const m = Number(r._id.month);
+
+                if (!listeMoisPossibles[y]) listeMoisPossibles[y] = [];
+                listeMoisPossibles[y].push(monthLabel(m));
+            }
+
+            return res.json(listeMoisPossibles);
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({
+                message: "Erreur serveur lors de la récupération de la liste des mois",
+            });
+        }
+    }
+);
+
+/**
+ * GET /api/graphs/capteurs/month
+ * Query:
+ *  - type=sonde|toilette
+ *  - annee=2026 (requis)
+ *  - start=03 (mois de début, requis)
+ *  - end=05 (mois de fin, requis)
+ *  - filtres: haut, type (sonde) / occupancy (toilette)
+ *
+ * Retourne: Données par jour pour la plage de mois spécifiée
+ */
+router.get(
+    "/month",
+    auth,
+    requirePermission("capteurs.view"),
+    async (req, res) => {
+        try {
+            const { model, type } = resolveModel(req.query.type);
+            const baseMatch = buildBaseMatch(type, req.query);
+
+            const yearNum = Number(req.query.annee);
+            if (!yearNum || Number.isNaN(yearNum)) {
+                return res.status(400).json({ message: "Paramètre 'annee' requis et doit être valide" });
+            }
+
+            const startMonth = parseMonth(req.query.start);
+            const endMonth = parseMonth(req.query.end);
+
+            if (!startMonth || startMonth < 1 || startMonth > 12) {
+                return res.status(400).json({ message: "Paramètre 'start' invalide (01-12)" });
+            }
+
+            if (!endMonth || endMonth < 1 || endMonth > 12) {
+                return res.status(400).json({ message: "Paramètre 'end' invalide (01-12)" });
+            }
+
+            if (startMonth > endMonth) {
+                return res.status(400).json({ message: "Le mois de début doit être <= au mois de fin" });
+            }
+
+            const data = await model.aggregate([
                 { $match: baseMatch },
                 {
                     $project: {
@@ -232,24 +283,121 @@ router.get(
                         },
                     },
                 },
-                { $match: { "parts.year": yearNum, "parts.month": monthNum } },
+                {
+                    $match: {
+                        "parts.year": yearNum,
+                        "parts.month": { $gte: startMonth, $lte: endMonth },
+                    },
+                },
                 {
                     $group: {
                         _id: {
-                            $dateToString: {
+                            month: "$parts.month",
+                            day: "$parts.day",
+                        },
+                        frequentation: { $sum: 1 },
+                    },
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        mois: { $concat: [{ $toString: "$_id.month" }] },
+                        jour: { $concat: [{ $toString: "$_id.day" }] },
+                        frequentation: 1,
+                    },
+                },
+                { $sort: { mois: 1, jour: 1 } },
+            ]);
+
+            return res.json({
+                params: {
+                    annee: yearNum,
+                    start: monthLabel(startMonth),
+                    end: monthLabel(endMonth),
+                },
+                donnees: data,
+            });
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({
+                message: "Erreur serveur lors de la récupération des données mensuelles",
+            });
+        }
+    }
+);
+
+/**
+ * GET /api/graphs/capteurs/year/all
+ * Query:
+ *  - type=sonde|toilette
+ *  - filtres: haut, type (sonde) / occupancy (toilette)
+ *
+ * Retourne: Liste de toutes les années disponibles
+ */
+router.get(
+    "/year/all",
+    auth,
+    requirePermission("capteurs.view"),
+    async (req, res) => {
+        try {
+            const { model, type } = resolveModel(req.query.type);
+            const baseMatch = buildBaseMatch(type, req.query);
+
+            const yearRows = await model.aggregate([
+                { $match: baseMatch },
+                {
+                    $project: {
+                        parts: {
+                            $dateToParts: {
                                 date: "$createdAt",
-                                format: "%d",
                                 timezone: TZ,
                             },
                         },
-                        "frequentation": { $sum: 1 },
                     },
                 },
-                { $project: { _id: 0, jour: "$_id", "frequentation": 1 } },
-                { $sort: { jour: 1 } },
+                {
+                    $group: {
+                        _id: "$parts.year",
+                    },
+                },
+                { $sort: { _id: 1 } },
             ]);
 
-            // 4) Année (par mois)
+            const listeAnneesPossibles = yearRows.map((r) => String(r._id));
+
+            return res.json(listeAnneesPossibles);
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({
+                message: "Erreur serveur lors de la récupération de la liste des années",
+            });
+        }
+    }
+);
+
+/**
+ * GET /api/graphs/capteurs/year
+ * Query:
+ *  - type=sonde|toilette
+ *  - annee=2026 (requis)
+ *  - filtres: haut, type (sonde) / occupancy (toilette)
+ *
+ * Retourne: Données par mois pour l'année spécifiée
+ */
+router.get(
+    "/year",
+    auth,
+    requirePermission("capteurs.view"),
+    async (req, res) => {
+        try {
+            const { model, type } = resolveModel(req.query.type);
+            const baseMatch = buildBaseMatch(type, req.query);
+
+            const yearNum = Number(req.query.annee);
+            if (!yearNum || Number.isNaN(yearNum)) {
+                return res.status(400).json({ message: "Paramètre 'annee' requis et doit être valide" });
+            }
+
             const yearRows = await model.aggregate([
                 { $match: baseMatch },
                 {
@@ -266,38 +414,25 @@ router.get(
                 {
                     $group: {
                         _id: "$parts.month",
-                        "frequentation": { $sum: 1 },
+                        frequentation: { $sum: 1 },
                     },
                 },
                 { $sort: { _id: 1 } },
             ]);
 
-            const anneeDonnees = yearRows.map((r) => ({
-                mois: monthParamsLabel(Number(r._id)),
-                "frequentation": r["frequentation"],
+            const donnees = yearRows.map((r) => ({
+                mois: monthLabel(Number(r._id)),
+                frequentation: r.frequentation,
             }));
 
-            // Réponse EXACTE (mêmes clés) que ton JSON
             return res.json({
-                "Today": aujourdHui,
-                "ListOfMonth": ListeMoisPossibles,
-                "Month": {
-                    params: {
-                        annee: yearNum,
-                        mois: monthParamsLabel(monthNum),
-                    },
-                    donnees: moisDonnees,
-                },
-                "ListOfYear": ListeAnneesPossibles,
-                "Year": {
-                    annee: yearNum,
-                    donnees: anneeDonnees,
-                },
+                annee: yearNum,
+                donnees: donnees,
             });
         } catch (e) {
             console.error(e);
             return res.status(500).json({
-                message: "Erreur serveur lors de la génération des dates/agrégations capteurs",
+                message: "Erreur serveur lors de la récupération des données annuelles",
             });
         }
     }
