@@ -79,7 +79,7 @@ function buildBaseMatch(modelType, q) {
 }
 
 /**
- * GET /api/graphs/capteurs/today
+ * POST /api/graphs/capteurs/today
  * Query:
  *  - type=sonde|toilette
  *  - date=YYYY-MM-DD (optionnel, par défaut aujourd'hui)
@@ -87,7 +87,7 @@ function buildBaseMatch(modelType, q) {
  *
  * Retourne: Données par heure pour la journée ciblée
  */
-router.get(
+router.post(
     "/today",
     auth,
     async (req, res) => {
@@ -276,9 +276,7 @@ router.post(
                     const dateStr = `${yearNum}-${pad2(m)}-${pad2(d)}`;
                     const existing = data.find((item) => item.date === dateStr);
                     allDays.push({
-                        date: dateStr,
                         jour: pad2(d),
-                        mois: pad2(m),
                         frequentation: existing ? existing.frequentation : 0,
                     });
                 }
@@ -350,7 +348,7 @@ router.get(
 );
 
 /**
- * GET /api/graphs/capteurs/year
+ * POST /api/graphs/capteurs/year
  * Query:
  *  - type=sonde|toilette
  *  - annee=2026 (requis)
@@ -358,15 +356,15 @@ router.get(
  *
  * Retourne: Données par mois pour l'année spécifiée
  */
-router.get(
+router.post(
     "/year",
     auth,
     async (req, res) => {
         try {
-            const { model, type } = resolveModel(req.query.type);
-            const baseMatch = buildBaseMatch(type, req.query);
+            const { model, type } = resolveModel(req.body.type);
+            const baseMatch = buildBaseMatch(type, req.body);
 
-            const yearNum = Number(req.query.annee);
+            const yearNum = Number(req.body.annee);
             if (!yearNum || Number.isNaN(yearNum)) {
                 return res.status(400).json({ message: "Paramètre 'annee' requis et doit être valide" });
             }
