@@ -79,6 +79,97 @@ function buildBaseMatch(modelType, body) {
 }
 
 /**
+ * POST /api/graphs/capteurs/lastinfo
+ * Body:
+ *  - type: "sonde" | "toilette"
+ *
+ * Retourne: Dernière valeur enregistrée avec sa date d'insertion
+ */
+router.post("/lastinfo",
+    async (req, res) =>
+    {
+        try {
+            const { model, type: modelType } = resolveModel(req.body.type);
+            const baseMatch = buildBaseMatch(modelType, req.body);
+
+            // Récupérer le dernier document
+            const lastRecord = await model
+                .findOne(baseMatch)
+                .sort({ createdAt: -1 })
+                .lean();
+
+            if (!lastRecord) {
+                return res.status(404).json({
+                    message: "Aucune donnée trouvée",
+                });
+            }
+
+            // Formater la date au format "YYYY-MM-DD HH:mm"
+            const date = new Date(lastRecord.createdAt);
+            const year = date.getFullYear();
+            const month = pad2(date.getMonth() + 1);
+            const day = pad2(date.getDate());
+            const hours = pad2(date.getHours());
+            const minutes = pad2(date.getMinutes());
+            const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+            // Agrégation pour récupérer les données
+            const groupFields = {
+                _id: null,
+            };
+
+            // Ajouter les champs spécifiques selon le type
+            if (modelType === "sonde") {
+                groupFields.haut = { $first: "$haut" };
+            } else if (modelType === "toilette") {
+                groupFields.frequentation = { $sum: 1 };
+            }
+
+            const data = await model.aggregate([
+                { $match: baseMatch },
+                {
+                    $project: {
+                        createdAt: 1,
+                        haut: 1,
+                        parts: {
+                            $dateToParts: {
+                                date: "$createdAt",
+                                timezone: TZ,
+                            },
+                        },
+                    },
+                },
+                {
+                    $match: {
+                        "parts.year": year,
+                        "parts.month": Number(month),
+                        "parts.day": Number(day),
+                        "parts.hour": Number(hours),
+                        "parts.minute": Number(minutes),
+                    },
+                },
+                {
+                    $group: groupFields,
+                },
+            ]);
+
+            const result = data[0] || {};
+
+            return res.json({
+                date: formattedDate,
+                ...(modelType === "sonde" ? { haut: result.haut || lastRecord.haut } : {}),
+                ...(modelType === "toilette" ? { frequentation: String(result.frequentation || 0) } : {}),
+            });
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({
+                message: "Erreur serveur lors de la récupération des données",
+            });
+        }
+    }
+);
+
+/**
  * POST /api/graphs/capteurs/today
  * Body:
  *  - type: "sonde" | "toilette"
