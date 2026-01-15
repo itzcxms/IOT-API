@@ -2,7 +2,6 @@ const { Router } = require("express");
 const auth = require("../middleware/auth.js");
 const Sonde = require("../models/Sondes.js");
 const Toilette = require("../models/Toilette.js");
-const requirePermission = require("../middleware/requirePermission");
 
 const router = Router();
 module.exports = router;
@@ -63,16 +62,17 @@ function resolveModel(type) {
     return { model: Sonde, type: "sonde" };
 }
 
-function buildBaseMatch(modelType, q) {
+function buildBaseMatch(modelType, body) {
     const match = {};
+    const filters = body.filters || {};
 
     if (modelType === "sonde") {
-        if (q.haut) match.haut = String(q.haut);
-        if (q.type) match.type = String(q.type);
+        if (filters.haut) match.haut = String(filters.haut);
+        if (filters.type) match.type = String(filters.type);
     }
 
     if (modelType === "toilette") {
-        if (q.occupancy) match.occupancy = String(q.occupancy);
+        if (filters.occupancy) match.occupancy = String(filters.occupancy);
     }
 
     return match;
@@ -80,10 +80,10 @@ function buildBaseMatch(modelType, q) {
 
 /**
  * POST /api/graphs/capteurs/today
- * Query:
- *  - type=sonde|toilette
- *  - date=YYYY-MM-DD (optionnel, par défaut aujourd'hui)
- *  - filtres: haut, type (sonde) / occupancy (toilette)
+ * Body:
+ *  - type: "sonde" | "toilette"
+ *  - date: "YYYY-MM-DD" (optionnel, par défaut aujourd'hui)
+ *  - filters: { haut, type } pour sonde | { occupancy } pour toilette
  *
  * Retourne: Données par heure pour la journée ciblée
  */
@@ -92,35 +92,86 @@ router.post(
     auth,
     async (req, res) => {
         try {
-            const { model, type } = resolveModel(req.query.type);
-            const baseMatch = buildBaseMatch(type, req.query);
+            const { model, type: modelType } = resolveModel(req.body.type);
+            const baseMatch = buildBaseMatch(modelType, req.body);
+
+            // Déterminer la date ciblée
+            let targetDate;
+            if (req.body.date) {
+                targetDate = new Date(req.body.date);
+            } else {
+                targetDate = new Date();
+            }
+
+            // Créer les bornes de la journée en timezone Europe/Paris
+            const year = targetDate.getFullYear();
+            const month = targetDate.getMonth();
+            const day = targetDate.getDate();
+
+            const startOfDay = new Date(year, month, day, 0, 0, 0, 0);
+            const endOfDay = new Date(year, month, day, 23, 59, 59, 999);
+
+            // Agrégation pour récupérer les données par heure
+            const groupFields = {
+                _id: "$parts.hour",
+            };
+
+            // Ajouter les champs spécifiques selon le type
+            if (modelType === "sonde") {
+                groupFields.haut = { $first: "$haut" };
+                groupFields.type = { $first: "$type" };
+            } else if (modelType === "toilette") {
+                groupFields.frequentation = { $sum: 1 };
+            }
+
             const data = await model.aggregate([
                 { $match: baseMatch },
                 {
-                    $group: {
-                        _id: {
-                            $dateToString: {
+                    $project: {
+                        createdAt: 1,
+                        haut: 1,
+                        type: 1,
+                        parts: {
+                            $dateToParts: {
                                 date: "$createdAt",
-                                format: "%H",
                                 timezone: TZ,
                             },
                         },
-                        frequentationTmp: { $sum: 1 },
                     },
                 },
                 {
-                    $project: {
-                        _id: 0,
-                        heure: "$_id",
-                        frequentation: "$frequentationTmp",
+                    $match: {
+                        createdAt: { $gte: startOfDay, $lte: endOfDay },
                     },
                 },
-                { $sort: { heure: 1 } },
+                {
+                    $group: groupFields,
+                },
+                { $sort: { _id: 1 } },
             ]);
 
-            return res.json(
-                data,
-            );
+            // Générer toutes les heures de 0 à 23 (même sans données)
+            const allHours = [];
+            for (let h = 0; h < 24; h++) {
+                const existing = data.find((item) => item._id === h);
+                const hourData = {
+                    heure: pad2(h),
+                };
+
+                // Ajouter les champs filtrés
+                if (modelType === "sonde") {
+                    hourData.haut = existing ? existing.haut : "0";
+                } else if (modelType === "toilette") {
+                    hourData.frequentation = existing ? existing.frequentation : 0;
+                }
+
+                allHours.push(hourData);
+            }
+
+            return res.json({
+                date: `${year}-${pad2(month + 1)}-${pad2(day)}`,
+                donnees: allHours,
+            });
         } catch (e) {
             console.error(e);
             return res.status(500).json({
