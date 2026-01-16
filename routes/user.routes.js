@@ -24,7 +24,7 @@ router.get("/all", auth, requirePermission("users.view"), async (req, res) => {
 });
 
 // GET /api/users/view/:id
-router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) => {
+router.get("/view/user/:id", async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
             .select("-password")
