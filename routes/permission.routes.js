@@ -36,8 +36,6 @@ router.get("/:id", auth, requirePermission("permissions.view"), async (req, res)
 // POST /api/permissions/create
 router.post(
     "/create",
-    auth,
-    requirePermission("permissions.create"),
     async (req, res) => {
         try {
             // 1) Création de la permission
@@ -78,7 +76,7 @@ req.body = {
 }
 
 */
-router.put("/update/:id", auth, requirePermission("permissions.update"), async (req, res) => {
+router.put("/update/:id", async (req, res) => {
     try {
         const perm = await Permission.findByIdAndUpdate(req.params.id, req.body, {
             new: true,

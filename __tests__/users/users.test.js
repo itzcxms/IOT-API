@@ -74,7 +74,7 @@ describe("Users routes", () => {
         expect(res.body).toEqual(users);
     });
 
-    test("GET /api/users/view/user/:id retourne un user ou 404", async () => {
+    test("GET /api/users/view/:id retourne un user ou 404", async () => {
         const user = {
             _id: "1",
             nom: "Doe",
@@ -90,7 +90,7 @@ describe("Users routes", () => {
 
         User.findById.mockReturnValue(query);
 
-        const res = await request(app).get("/api/users/view/user/1");
+        const res = await request(app).get("/api/users/view/1");
 
         expect(User.findById).toHaveBeenCalledWith("1");
         expect(query.select).toHaveBeenCalledWith("-password");
@@ -132,7 +132,7 @@ describe("Users routes", () => {
         expect(res.body.email).toBe(body.email);
     });
 
-    test("PUT /api/users/update/user/:id met à jour un user (avec hash si password)", async () => {
+    test("PUT /api/users/update/:id met à jour un user (avec hash si password)", async () => {
         const body = { nom: "Updated", password: "newpass" };
 
         const updatedUser = {
@@ -152,7 +152,7 @@ describe("Users routes", () => {
 
         User.findByIdAndUpdate.mockReturnValue(query);
 
-        const res = await request(app).put("/api/users/update/user/1").send(body);
+        const res = await request(app).put("/api/users/update/1").send(body);
 
         expect(bcrypt.hash).toHaveBeenCalledWith("newpass", 10);
         expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -168,7 +168,7 @@ describe("Users routes", () => {
         const user = { _id: "1", email: "john@example.com" };
         User.findByIdAndDelete.mockResolvedValue(user);
 
-        const res = await request(app).delete("/api/users/delete/user/1");
+        const res = await request(app).delete("/api/users/delete/1");
 
         expect(User.findByIdAndDelete).toHaveBeenCalledWith("1");
         expect(res.status).toBe(200);

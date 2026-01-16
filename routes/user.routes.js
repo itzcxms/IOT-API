@@ -82,8 +82,6 @@ router.put("/update/:id", async (req, res) => {
     try {
         const data = { ...req.body };
 
-        console.log(...req.body);
-
         // Si on veut changer de rôle, vérifier que le rôle existe
         if (data.role_id) {
             const role = await Role.findById(data.role_id);
@@ -114,8 +112,8 @@ router.put("/update/:id", async (req, res) => {
     }
 });
 
-// DELETE /api/users/delete/user/:id
-router.delete("/delete/user/:id", auth, requirePermission("users.delete"), async (req, res) => {
+// DELETE /api/users/delete/:id
+router.delete("/delete/:id", auth, requirePermission("users.delete"), async (req, res) => {
     try {
         const user = await User.findByIdAndDelete(req.params.id);
 

@@ -26,7 +26,7 @@ router.get("/all", async (req, res) => {
 // POST /api/roles/create
 router.post("/create", auth, requirePermission("roles.create"), async (req, res) => {
     try {
-        // 1) Création du rôleZ
+        // 1) Création du rôle
         const role = await Role.create(req.body);
 
         // 2) Récupération de toutes les permissions existantes
@@ -187,6 +187,67 @@ router.get(
         } catch (e) {
             console.error(e);
             res.status(500).json({ message: "Erreur serveur lors de la récupération des permissions du rôle" });
+        }
+    }
+);
+
+/**
+ * Modifier la valeur des permissions: actif = true/false à un rôle
+ * POST /api/roles/:roleId/permissions/:permId
+ * Body: { "actif": true/false}
+ */
+router.post(
+    "/:roleid/permissions/:permid",
+    // auth,
+    // requirePermission("roles.assign_permissions"),
+    async (req, res) => {
+        try {
+            const { actif } = req.body;
+            const { roleid, permid } = req.params;
+
+            // Validation du body
+            if (typeof actif !== 'boolean') {
+                return res.status(400).json({
+                    message: "Le champ 'actif' doit être un booléen (true/false)"
+                });
+            }
+
+            // Vérifier que le rôle existe
+            const role = await Role.findById(roleid);
+            if (!role) {
+                return res.status(404).json({ message: "Rôle introuvable" });
+            }
+
+            // Vérifier que la permission existe
+            const permission = await Permission.findById(permid);
+            if (!permission) {
+                return res.status(404).json({ message: "Permission introuvable" });
+            }
+
+            // Mettre à jour ou créer la relation role-permission
+            const result = await RolePermission.findOneAndUpdate(
+                { role_id: roleid, permission_id: permid },
+                {
+                    $set: {
+                        role_id: roleid,
+                        permission_id: permid,
+                        actif: actif
+                    }
+                },
+                {
+                    upsert: true,
+                    new: true
+                }
+            );
+
+            res.json({
+                message: `Permission ${actif ? 'activée' : 'désactivée'} pour le rôle`,
+                data: result
+            });
+
+        } catch (e) {
+            console.error(e);
+            res.status(400).json({ message: e.message });
         }
     }
 );

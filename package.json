@@ -33,7 +33,7 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "coveragePathIgnorePatters": [
+    "coveragePathIgnorePatterns": [
       "/node_modules"
     ],
     "testPathIgnorePatterns": [

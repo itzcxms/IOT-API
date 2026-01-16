@@ -16,6 +16,7 @@ const client = require('./addons/mqttServer');
 const authRoutes = require ("./routes/auth.routes");
 const userRoutes = require ("./routes/user.routes");
 const roleRoutes = require ("./routes/role.routes");
+const seulRoutes = require("./routes/seuil.route.js");
 const permissionRoutes = require ("./routes/permission.routes");
 const capteursGraphRoutes = require("./routes/capteursGraph.routes.js");
 const questionnaireGraphRoutes = require("./routes/questionnaireGraph.routes.js");
@@ -25,9 +26,11 @@ app.get("/", (req, res) => res.json({ status: "API OK" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
+app.use("/api/seuils", seulRoutes);
 app.use("/api/permissions", permissionRoutes);
 app.use("/api/graphs/capteurs", capteursGraphRoutes);
 app.use("/api/questionnaires", questionnaireGraphRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 connectDB(process.env.MONGO_URI)
