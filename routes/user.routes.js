@@ -80,7 +80,7 @@ router.post("/create", auth, requirePermission("users.create"), async (req, res)
 // PUT /api/users/update/:id
 router.put("/update/:id", async (req, res) => {
     try {
-        const data = { ...req.body };
+        const data = req.body;
 
         // Si on veut changer de rôle, vérifier que le rôle existe
         if (data.role_id) {
