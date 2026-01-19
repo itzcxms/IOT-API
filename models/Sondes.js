@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema(
+const SondeSchema = new mongoose.Schema(
     {
         haut: { type: String, required: true },
         type: { type: String, required: true },
@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model("Sonde", userSchema);
+module.exports = mongoose.model("Sonde", SondeSchema);
 
 /**
  * bridge-chaumont {

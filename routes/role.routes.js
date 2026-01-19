@@ -98,63 +98,63 @@ router.delete("/delete/:id", auth, requirePermission("roles.delete"), async (req
     }
 });
 
-/**
- * Assigner des permissions à un rôle
- * POST /api/roles/:id/permissions
- * body: { permission_ids: ["permId1", "permId2", ...] }
- */
-router.post(
-    "/:id/permissions",
-    // auth,
-    // requirePermission("roles.assign_permissions"),
-    async (req, res) => {
-        try {
-            const { permission_ids = [] } = req.body;
-
-            const role = await Role.findById(req.params.id);
-            if (!role) {
-                return res.status(404).json({ message: "Rôle introuvable" });
-            }
-
-            // Vérifier que toutes les permissions existent
-            const perms = await Permission.find({ _id: { $in: permission_ids } });
-            if (perms.length !== permission_ids.length) {
-                return res.status(400).json({ message: "Une ou plusieurs permissions invalides" });
-            }
-
-            // 1) Mettre toutes les permissions de ce rôle à inactif
-            await RolePermission.updateMany(
-                { role_id: role._id },
-                { $set: { actif: false } }
-            );
-
-            // 2) Activer uniquement les permissions fournies + upsert si manquantes
-            const ops = permission_ids.map((pid) => ({
-                updateOne: {
-                    filter: { role_id: role._id, permission_id: pid },
-                    update: {
-                        $set: {
-                            role_id: role._id,
-                            permission_id: pid,
-                            actif: true,
-                        },
-                    },
-                    upsert: true,
-                },
-            }));
-
-            if (ops.length) {
-                await RolePermission.bulkWrite(ops);
-                res.json({ message: "Permissions mises à jour pour le rôle" });
-            } else {
-                res.json({ message: "Toutes les permissions ont été désactivées pour ce rôle" });
-            }
-        } catch (e) {
-            console.error(e);
-            res.status(400).json({ message: e.message });
-        }
-    }
-);
+// /**
+//  * Assigner des permissions à un rôle
+//  * POST /api/roles/:id/permissions
+//  * body: { permission_ids: ["permId1", "permId2", ...] }
+//  */
+// router.post(
+//     "/:id/permissions",
+//     auth,
+//     requirePermission("roles.assign_permissions"),
+//     async (req, res) => {
+//         try {
+//             const { permission_ids = [] } = req.body;
+//
+//             const role = await Role.findById(req.params.id);
+//             if (!role) {
+//                 return res.status(404).json({ message: "Rôle introuvable" });
+//             }
+//
+//             // Vérifier que toutes les permissions existent
+//             const perms = await Permission.find({ _id: { $in: permission_ids } });
+//             if (perms.length !== permission_ids.length) {
+//                 return res.status(400).json({ message: "Une ou plusieurs permissions invalides" });
+//             }
+//
+//             // 1) Mettre toutes les permissions de ce rôle à inactif
+//             await RolePermission.updateMany(
+//                 { role_id: role._id },
+//                 { $set: { actif: false } }
+//             );
+//
+//             // 2) Activer uniquement les permissions fournies + upsert si manquantes
+//             const ops = permission_ids.map((pid) => ({
+//                 updateOne: {
+//                     filter: { role_id: role._id, permission_id: pid },
+//                     update: {
+//                         $set: {
+//                             role_id: role._id,
+//                             permission_id: pid,
+//                             actif: true,
+//                         },
+//                     },
+//                     upsert: true,
+//                 },
+//             }));
+//
+//             if (ops.length) {
+//                 await RolePermission.bulkWrite(ops);
+//                 res.json({ message: "Permissions mises à jour pour le rôle" });
+//             } else {
+//                 res.json({ message: "Toutes les permissions ont été désactivées pour ce rôle" });
+//             }
+//         } catch (e) {
+//             console.error(e);
+//             res.status(400).json({ message: e.message });
+//         }
+//     }
+// );
 
 // GET /api/roles/:id/permissions
 router.get(

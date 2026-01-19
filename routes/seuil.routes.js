@@ -1,23 +1,23 @@
 const { Router } = require("express");
-const auth = require("../middleware/auth.js");
+const auth = require("../middleware/auth");
 const requirePermission = require("../middleware/requirePermission.js");
 const Seuil = require("../models/Seuils.js");
 
 const router = Router();
 module.exports = router;
 
-// GET - Récupérer tous les noms de villes (unique)
-router.get("/villes", auth, requirePermission("seuil.view"), async (req, res) => {
+// GET - Récupérer tous les capteur_id (unique)
+router.get("/capteurs", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
-        const villes = await Seuil.distinct("nom");
-        res.json(villes);
+        const capteurs = await Seuil.distinct("capteur_id");
+        res.json(capteurs);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
 // GET - Récupérer tous les seuils
-router.get("/", auth, requirePermission("seuil.view"), async (req, res) => {
+router.get("/", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
         const seuils = await Seuil.find().sort({ createdAt: -1 });
         res.json(seuils);
@@ -27,7 +27,7 @@ router.get("/", auth, requirePermission("seuil.view"), async (req, res) => {
 });
 
 // GET - Récupérer les seuils de type "savon"
-router.get("/savon", auth, requirePermission("seuil.view"), async (req, res) => {
+router.get("/savon", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
         const seuils = await Seuil.find({ type: "savon" }).sort({ createdAt: -1 });
         res.json(seuils);
@@ -37,7 +37,7 @@ router.get("/savon", auth, requirePermission("seuil.view"), async (req, res) => 
 });
 
 // GET - Récupérer les seuils de type "eau"
-router.get("/eau", auth, requirePermission("seuil.view"), async (req, res) => {
+router.get("/eau", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
         const seuils = await Seuil.find({ type: "eau" }).sort({ createdAt: -1 });
         res.json(seuils);
@@ -46,11 +46,11 @@ router.get("/eau", auth, requirePermission("seuil.view"), async (req, res) => {
     }
 });
 
-// GET - Récupérer les seuils par nom de ville (recherche partielle)
-router.get("/ville/:nom", auth, requirePermission("seuil.view"), async (req, res) => {
+// GET - Récupérer les seuils par capteur_id (recherche partielle)
+router.get("/capteur/:capteur_id", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
         const seuils = await Seuil.find({
-            nom: { $regex: req.params.nom, $options: 'i' }
+            capteur_id: { $regex: req.params.capteur_id, $options: 'i' }
         }).sort({ createdAt: -1 });
         res.json(seuils);
     } catch (error) {
@@ -58,11 +58,11 @@ router.get("/ville/:nom", auth, requirePermission("seuil.view"), async (req, res
     }
 });
 
-// GET - Récupérer les seuils par ville ET type (recherche partielle sur le nom)
-router.get("/ville/:nom/:type", auth, requirePermission("seuil.view"), async (req, res) => {
+// GET - Récupérer les seuils par capteur_id ET type (recherche partielle sur le capteur_id)
+router.get("/capteur/:capteur_id/:type", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
         const seuils = await Seuil.find({
-            nom: { $regex: req.params.nom, $options: 'i' },
+            capteur_id: { $regex: req.params.capteur_id, $options: 'i' },
             type: req.params.type
         }).sort({ createdAt: -1 });
         res.json(seuils);
@@ -71,8 +71,8 @@ router.get("/ville/:nom/:type", auth, requirePermission("seuil.view"), async (re
     }
 });
 
-// GET - Récupérer un seuil par ID
-router.get("/:id", auth, requirePermission("seuil.view"), async (req, res) => {
+// GET - Récupérer un seuil par ID MongoDB
+router.get("/:id", auth, requirePermission("seuils.view"), async (req, res) => {
     try {
         const seuil = await Seuil.findById(req.params.id);
         if (!seuil) return res.status(404).json({ message: "Seuil non trouvé" });
@@ -83,7 +83,7 @@ router.get("/:id", auth, requirePermission("seuil.view"), async (req, res) => {
 });
 
 // POST - Créer un nouveau seuil
-router.post("/", auth, requirePermission("seuil.create"),async (req, res) => {
+router.post("/", auth, requirePermission("seuils.create"), async (req, res) => {
     try {
         const seuil = new Seuil(req.body);
         const nouveauSeuil = await seuil.save();
@@ -94,7 +94,7 @@ router.post("/", auth, requirePermission("seuil.create"),async (req, res) => {
 });
 
 // PUT - Mettre à jour un seuil
-router.put("/:id", auth, requirePermission("seuil.update"), async (req, res) => {
+router.put("/:id", auth, requirePermission("seuils.update"), async (req, res) => {
     try {
         const seuil = await Seuil.findByIdAndUpdate(
             req.params.id,
@@ -109,7 +109,7 @@ router.put("/:id", auth, requirePermission("seuil.update"), async (req, res) => 
 });
 
 // DELETE - Supprimer un seuil
-router.delete("/:id", auth, requirePermission("seuil.delete"), async (req, res) => {
+router.delete("/:id", auth, requirePermission("seuils.delete"), async (req, res) => {
     try {
         const seuil = await Seuil.findByIdAndDelete(req.params.id);
         if (!seuil) return res.status(404).json({ message: "Seuil non trouvé" });
@@ -118,4 +118,3 @@ router.delete("/:id", auth, requirePermission("seuil.delete"), async (req, res) 
         res.status(500).json({ message: error.message });
     }
 });
-

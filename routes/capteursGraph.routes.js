@@ -82,7 +82,6 @@ function buildBaseMatch(modelType, body) {
  * POST /api/graphs/capteurs/lastinfo
  * Body:
  *  - type: "sonde" | "toilette"
- *
  * Retourne: Dernière valeur enregistrée avec sa date d'insertion
  */
 router.post("/lastinfo",
@@ -169,6 +168,118 @@ router.post("/lastinfo",
     }
 );
 
+router.post("/week", async (req, res) => {
+    try {
+        const { model, type: modelType } = resolveModel(req.body.type);
+        const baseMatch = buildBaseMatch(modelType, req.body);
+
+        // Déterminer la date ciblée (début de semaine)
+        let targetDate;
+        if (req.body.date) {
+            targetDate = new Date(req.body.date);
+        } else {
+            targetDate = new Date();
+        }
+
+        // Créer les bornes de la semaine (7 jours)
+        const startOfWeek = new Date(
+            targetDate.getFullYear(),
+            targetDate.getMonth(),
+            targetDate.getDate(),
+            0, 0, 0, 0
+        );
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6); // +6 jours (J0 à J6 = 7 jours)
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        // Agrégation pour récupérer les données par jour
+        const groupFields = {
+            _id: {
+                year: "$parts.year",
+                month: "$parts.month",
+                day: "$parts.day"
+            },
+        };
+
+        // Ajouter les champs spécifiques selon le type
+        if (modelType === "sonde") {
+            groupFields.haut = { $first: "$haut" };
+        } else if (modelType === "toilette") {
+            groupFields.frequentation = { $sum: 1 };
+        }
+
+        const data = await model.aggregate([
+            { $match: baseMatch },
+            {
+                $project: {
+                    createdAt: 1,
+                    haut: 1,
+                    type: 1,
+                    parts: {
+                        $dateToParts: {
+                            date: "$createdAt",
+                            timezone: TZ,
+                        },
+                    },
+                },
+            },
+            {
+                $match: {
+                    createdAt: { $gte: startOfWeek, $lte: endOfWeek },
+                },
+            },
+            {
+                $group: groupFields,
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
+        ]);
+
+        // Générer tous les jours de la semaine (7 jours)
+        const allDays = [];
+        for (let d = 0; d < 7; d++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(currentDay.getDate() + d);
+
+            const year = currentDay.getFullYear();
+            const month = currentDay.getMonth() + 1;
+            const day = currentDay.getDate();
+
+            const existing = data.find(
+                (item) =>
+                    item._id.year === year &&
+                    item._id.month === month &&
+                    item._id.day === day
+            );
+
+            const dayData = {
+                date: `${year}-${pad2(month)}-${pad2(day)}`,
+            };
+
+            // Ajouter les champs filtrés
+            if (modelType === "sonde") {
+                dayData.haut = existing ? existing.haut : "0";
+            } else if (modelType === "toilette") {
+                dayData.frequentation = existing ? existing.frequentation : 0;
+            }
+
+            allDays.push(dayData);
+        }
+
+        return res.json({
+            periodeDebut: startOfWeek.toISOString().split('T')[0],
+            periodeFin: endOfWeek.toISOString().split('T')[0],
+            donnees: allDays,
+        });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({
+            message: "Erreur serveur lors de la récupération des données hebdomadaires",
+        });
+    }
+});
+
+
 /**
  * POST /api/graphs/capteurs/today
  * Body:
@@ -210,7 +321,6 @@ router.post(
             // Ajouter les champs spécifiques selon le type
             if (modelType === "sonde") {
                 groupFields.haut = { $first: "$haut" };
-                groupFields.type = { $first: "$type" };
             } else if (modelType === "toilette") {
                 groupFields.frequentation = { $sum: 1 };
             }

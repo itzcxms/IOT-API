@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema(
+const WCSchema = new mongoose.Schema(
     {
         battery: { type: Number, required: true },
         calibration_status: { type: String, required: true },
@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model("Toilette", userSchema);
+module.exports = mongoose.model("Toilette", WCSchema);
 
 /**
 * occupation-1 {

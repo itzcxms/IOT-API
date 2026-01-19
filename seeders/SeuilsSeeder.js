@@ -1,59 +1,55 @@
 const mongoose = require("mongoose");
 const Seuil = require("../models/Seuils.js");
-const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
 const connectDB = require("../config/db");
 
 const seuils = [
-    // Eau
-    { nom: "Paris-Eau", type: "eau", unite: "m³", seuil: 150 },
-    { nom: "Lyon-Eau", type: "eau", unite: "m³", seuil: 120 },
-    { nom: "Marseille-Eau", type: "eau", unite: "m³", seuil: 140 },
-    { nom: "Toulouse-Eau", type: "eau", unite: "m³", seuil: 130 },
-    { nom: "Nice-Eau", type: "eau", unite: "m³", seuil: 135 },
-    { nom: "Nantes-Eau", type: "eau", unite: "m³", seuil: 125 },
+    // Eau - Loire Chaumont
+    { nom: "Chaumont Centre-Eau", type: "eau", unite: "m³", seuil: 100, capteur_id: "CAPT_EAU_CHAUMONT_001" },
+    { nom: "Chaumont Nord-Eau", type: "eau", unite: "m³", seuil: 95, capteur_id: "CAPT_EAU_CHAUMONT_002" },
+    { nom: "Chaumont Sud-Eau", type: "eau", unite: "m³", seuil: 110, capteur_id: "CAPT_EAU_CHAUMONT_003" },
+    { nom: "Chaumont Est-Eau", type: "eau", unite: "m³", seuil: 105, capteur_id: "CAPT_EAU_CHAUMONT_004" },
+    { nom: "Chaumont Ouest-Eau", type: "eau", unite: "m³", seuil: 115, capteur_id: "CAPT_EAU_CHAUMONT_005" },
+    { nom: "Chaumont Zone Industrielle-Eau", type: "eau", unite: "m³", seuil: 90, capteur_id: "CAPT_EAU_CHAUMONT_006" },
 
-    // Savon
-    { nom: "Paris-Savon", type: "savon", unite: "L", seuil: 50 },
-    { nom: "Lyon-Savon", type: "savon", unite: "L", seuil: 40 },
-    { nom: "Marseille-Savon", type: "savon", unite: "L", seuil: 45 },
-    { nom: "Toulouse-Savon", type: "savon", unite: "L", seuil: 42 },
-    { nom: "Nice-Savon", type: "savon", unite: "L", seuil: 48 },
-    { nom: "Nantes-Savon", type: "savon", unite: "L", seuil: 38 },
+    // Savon - Loire Chaumont
+    { nom: "Chaumont Centre-Savon", type: "savon", unite: "L", seuil: 35, capteur_id: "CAPT_SAVON_CHAUMONT_001" },
+    { nom: "Chaumont Nord-Savon", type: "savon", unite: "L", seuil: 30, capteur_id: "CAPT_SAVON_CHAUMONT_002" },
+    { nom: "Chaumont Sud-Savon", type: "savon", unite: "L", seuil: 40, capteur_id: "CAPT_SAVON_CHAUMONT_003" },
+    { nom: "Chaumont Est-Savon", type: "savon", unite: "L", seuil: 32, capteur_id: "CAPT_SAVON_CHAUMONT_004" },
+    { nom: "Chaumont Ouest-Savon", type: "savon", unite: "L", seuil: 38, capteur_id: "CAPT_SAVON_CHAUMONT_005" },
+    { nom: "Chaumont Zone Industrielle-Savon", type: "savon", unite: "L", seuil: 28, capteur_id: "CAPT_SAVON_CHAUMONT_006" },
 ];
 
 const seedSeuils = async () => {
     try {
-        const app = express();
+        console.log("🌱 Démarrage du seeding des seuils...");
 
-        app.use(cors());
-        app.use(express.json());
-        app.use(morgan("dev"));
+        // Connexion à la base de données
+        await connectDB("mongodb+srv://stevenmallochet_db_user:YCuj2XdlBvMplzy4@cluster0.h320qzb.mongodb.net/?appName=Cluster0");
+        console.log("✅ Connecté à la base de données");
 
-        const PORT = 3005
-        connectDB("mongodb+srv://stevenmallochet_db_user:YCuj2XdlBvMplzy4@cluster0.h320qzb.mongodb.net/?appName=Cluster0")
-            .then(() => {
-                app.listen(PORT, () => {
-                    console.log(`🚀 Server on http://localhost:${PORT}`);
-                });
-            })
-            .catch((err) => {
-                console.error("Erreur de connexion à la base :", err);
-                process.exit(1);
-            });
-
+        // Suppression des anciens seuils
         await Seuil.deleteMany({});
-        console.log("Anciens seuils supprimés");
+        console.log("🗑️  Anciens seuils supprimés");
 
+        // Insertion des nouveaux seuils
         await Seuil.insertMany(seuils);
-        console.log(`${seuils.length} seuils insérés avec succès`);
+        console.log(`✅ ${seuils.length} seuils insérés avec succès`);
 
+        // Affichage des seuils insérés
+        console.log("\n📋 Liste des seuils insérés:");
+        seuils.forEach(s => {
+            console.log(`  - ${s.capteur_id}: ${s.nom} (${s.type}) - Seuil: ${s.seuil} ${s.unite}`);
+        });
+
+        // Fermeture de la connexion
         await mongoose.connection.close();
-        console.log("Connexion fermée");
+        console.log("\n🔌 Connexion fermée");
+        console.log("✨ Seeding terminé avec succès");
+
         process.exit(0);
     } catch (error) {
-        console.error("Erreur lors du seeding:", error);
+        console.error("❌ Erreur lors du seeding:", error);
         process.exit(1);
     }
 };

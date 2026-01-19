@@ -16,7 +16,7 @@ const router = Router();
 router.post(
     "/register",
     auth,
-    requirePermission("admin.create"), // au lieu de "admin.create"
+    requirePermission("admin.register"), // au lieu de "admin.create"
     async (req, res) => {
         try {
             const { nom, prenom, email, password, role_id } = req.body;
@@ -84,10 +84,14 @@ router.post("/login", async (req, res) => {
         const { email, password } = req.body;
 
         const user = await User.findOne({ email }).populate("role_id");
-        if (!user || !user.actif) {
+        if (!user) {
             return res
                 .status(401)
                 .json({ message: "Identifiants ou mot de passe invalides" });
+        }
+
+        if(!user.actif) {
+            return res.status(401).json({message: "Votre compte à été suspendu."})
         }
 
         const ok = await bcrypt.compare(password, user.password);
@@ -118,7 +122,7 @@ router.post("/login", async (req, res) => {
             }
         );
 
-        res.json({
+        res.status(200).json({
             token,
             refreshToken,
             user: {
