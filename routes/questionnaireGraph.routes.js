@@ -3,7 +3,6 @@ const auth = require("../middleware/auth.js");
 const requirePermission = require("../middleware/requirePermission.js");
 
 const Questionnaire = require("../models/Questionnaire.js");
-const QuestionnaireReponse = require("../models/QuestionnaireReponse.js");
 
 const router = Router();
 module.exports = router;
