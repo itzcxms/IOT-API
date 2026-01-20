@@ -1,18 +1,40 @@
 const mongoose = require("mongoose");
 
-const questionnaireSchema = new mongoose.Schema(
-    {
-        key: { type: String, required: true, unique: true }, // ex: "questionnaire_satisfaction"
-        titre: { type: String, required: true },
-        questions: [
-            {
-                key: { type: String, required: true },   // ex: "quest1"
-                label: { type: String, required: true }, // ex: "Propreté"
-                ordre: { type: Number, required: true }, // 1..5
-            },
-        ],
+const QuestionnaireSchema = new mongoose.Schema({
+    questionnaireId: {
+        type: String,
+        unique: true,
+        default: () => new mongoose.Types.ObjectId().toString()
     },
-    { timestamps: true }
-);
+    satisfactionAire: {
+        type: String,
+        enum: ["mauvais", "passable", "bon", "excellent"],
+        required: true
+    },
+    satisfactionSecurite: {
+        type: String,
+        enum: ["mauvais", "passable", "bon", "excellent"],
+        required: true
+    },
+    satisfactionServices: {
+        type: String,
+        enum: ["mauvais", "passable", "bon", "excellent"],
+        required: true
+    },
+    sourcesConnaissance: {
+        type: [String],
+        default: []
+    },
+    autreSource: {
+        type: String,
+        default: ""
+    },
+    remarques: {
+        type: String,
+        default: ""
+    }
+}, {
+    timestamps: true
+});
 
-module.exports = mongoose.model("Questionnaire", questionnaireSchema);
+module.exports = mongoose.model("Questionnaire", QuestionnaireSchema);
