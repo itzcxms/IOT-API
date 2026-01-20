@@ -168,7 +168,6 @@ router.get(
             let response = links.map((l) => JSON.parse(JSON.stringify(l.permission_id)));
             let data = {};
             for (let i = 0; i < response.length; i++) {
-                console.log(response[i])
                 response[i]["active"] = links[i]["actif"];
                 if (!Object.keys(data).includes(response[i].categorie)) {
                     data[response[i].categorie] = [response[i]];
