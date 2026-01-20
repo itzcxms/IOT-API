@@ -20,7 +20,6 @@ const seulRoutes = require("./routes/seuil.routes.js");
 const permissionRoutes = require ("./routes/permission.routes");
 const capteursGraphRoutes = require("./routes/capteursGraph.routes.js");
 const questionnaireRoutes = require("./routes/questionnaire.routes");
-const mongoose = require("mongoose");
 
 app.get("/api/", (req, res) => res.json({ status: "API OK" }));
 
@@ -31,7 +30,6 @@ app.use("/api/seuils", seulRoutes);
 app.use("/api/permissions", permissionRoutes);
 app.use("/api/graphs/capteurs", capteursGraphRoutes);
 app.use("/api/questionnaires", questionnaireRoutes);
-
 
 const PORT = process.env.PORT || 3000;
 connectDB(process.env.MONGO_URI)

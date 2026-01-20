@@ -2,78 +2,8 @@ const { Router } = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User.js");
-const Role = require("../models/Role.js");
-const requirePermission = require("../middleware/requirePermission.js");
-const auth = require("../middleware/auth.js");
 
 const router = Router();
-
-/**
- * POST /api/auth/register
- * body: { nom, prenom, email, password, role_id? }
- * -> Route réservée à un admin pour créer un utilisateur.
- */
-router.post(
-    "/register",
-    auth,
-    requirePermission("admin.register"), // au lieu de "admin.create"
-    async (req, res) => {
-        try {
-            const { nom, prenom, email, password, role_id } = req.body;
-
-            if (!nom || !prenom || !email || !password) {
-                return res.status(400).json({ message: "Champs requis manquants" });
-            }
-
-            const exists = await User.findOne({ email });
-            if (exists) {
-                return res.status(409).json({ message: "Email déjà utilisé" });
-            }
-
-            let role;
-            if (role_id) {
-                role = await Role.findById(role_id);
-            } else {
-                role =
-                    (await Role.findOne({ name: "utilisateur" })) ||
-                    (await Role.findOne());
-            }
-
-            if (!role) {
-                return res.status(404).json({ message: "Aucun rôle disponible" });
-            }
-
-            // 10 ou 12 est généralement suffisant, mais garde 15 si tu le souhaites
-            const hash = await bcrypt.hash(password, 10);
-
-            const user = await User.create({
-                nom,
-                prenom,
-                email,
-                password: hash,
-                role_id: role._id,
-                actif: true,
-            });
-
-            res.status(201).json({
-                message: "L'utilisateur a bien été créé !",
-                user: {
-                    id: user._id,
-                    nom,
-                    prenom,
-                    email,
-                    role_id: role._id,
-                    actif: true,
-                },
-            });
-        } catch (e) {
-            console.error(e);
-            res
-                .status(500)
-                .json({ message: "Erreur serveur lors de la création de l'utilisateur" });
-        }
-    }
-);
 
 /**
  * POST /api/auth/login
@@ -107,7 +37,7 @@ router.post("/login", async (req, res) => {
             nom: user.nom,
             prenom: user.prenom,
             email: user.email,
-            role_id: user.role_id?._id?.toString(),
+            role: user.role_id,
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, {

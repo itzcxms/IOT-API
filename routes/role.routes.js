@@ -24,7 +24,7 @@ router.get("/all", async (req, res) => {
 });
 
 // POST /api/roles/create
-router.post("/create", auth, requirePermission("roles.create"), async (req, res) => {
+router.post("/create", async (req, res) => {
     try {
         // 1) Création du rôle
         const role = await Role.create(req.body);
@@ -160,7 +160,6 @@ router.delete("/delete/:id", auth, requirePermission("roles.delete"), async (req
 router.get(
     "/:id/permissions",
     auth,
-    requirePermission("roles.view_permissions"),
     async (req, res) => {
         try {
             const links = await RolePermission.find({ role_id: req.params.id }).populate(
@@ -169,6 +168,7 @@ router.get(
             let response = links.map((l) => JSON.parse(JSON.stringify(l.permission_id)));
             let data = {};
             for (let i = 0; i < response.length; i++) {
+                console.log(response[i])
                 response[i]["active"] = links[i]["actif"];
                 if (!Object.keys(data).includes(response[i].categorie)) {
                     data[response[i].categorie] = [response[i]];
