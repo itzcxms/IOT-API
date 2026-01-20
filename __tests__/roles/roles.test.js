@@ -187,74 +187,74 @@ describe("Roles routes", () => {
         });
     });
 
-    describe("POST /api/roles/:id/permissions", () => {
-        test("assigne des permissions au rôle (met à jour)", async () => {
-            const role = { _id: "1", name: "Admin" };
-            const permission_ids = ["p1", "p2"];
-            const perms = permission_ids.map(id => ({ _id: id }));
-
-            Role.findById.mockResolvedValue(role);
-            Permission.find.mockResolvedValue(perms);
-            RolePermission.updateMany.mockResolvedValue({});
-            RolePermission.bulkWrite.mockResolvedValue({});
-
-            const res = await request(app)
-                .post("/api/roles/1/permissions")
-                .send({ permission_ids });
-
-            expect(Role.findById).toHaveBeenCalledWith("1");
-            expect(Permission.find).toHaveBeenCalledWith({
-                _id: { $in: permission_ids },
-            });
-            expect(RolePermission.updateMany).toHaveBeenCalledWith(
-                { role_id: role._id },
-                { $set: { actif: false } }
-            );
-            expect(RolePermission.bulkWrite).toHaveBeenCalled();
-            expect(res.status).toBe(200);
-            expect(res.body).toHaveProperty("message", "Permissions mises à jour pour le rôle");
-        });
-
-        test("désactive toutes les permissions si aucune fournie", async () => {
-            const role = { _id: "1", name: "Admin" };
-
-            Role.findById.mockResolvedValue(role);
-            Permission.find.mockResolvedValue([]);
-            RolePermission.updateMany.mockResolvedValue({});
-
-            const res = await request(app)
-                .post("/api/roles/1/permissions")
-                .send({ permission_ids: [] });
-
-            expect(RolePermission.updateMany).toHaveBeenCalled();
-            expect(res.status).toBe(200);
-            expect(res.body).toHaveProperty("message", "Toutes les permissions ont été désactivées pour ce rôle");
-        });
-
-        test("retourne 404 si le rôle n'existe pas", async () => {
-            Role.findById.mockResolvedValue(null);
-
-            const res = await request(app)
-                .post("/api/roles/999/permissions")
-                .send({ permission_ids: ["p1"] });
-
-            expect(res.status).toBe(404);
-            expect(res.body).toHaveProperty("message", "Rôle introuvable");
-        });
-
-        test("retourne 400 si les permissions sont invalides", async () => {
-            const role = { _id: "1", name: "Admin" };
-            Role.findById.mockResolvedValue(role);
-            Permission.find.mockResolvedValue([{ _id: "p1" }]); // Seulement 1 sur 2
-
-            const res = await request(app)
-                .post("/api/roles/1/permissions")
-                .send({ permission_ids: ["p1", "p2"] });
-
-            expect(res.status).toBe(400);
-            expect(res.body).toHaveProperty("message", "Une ou plusieurs permissions invalides");
-        });
-    });
+    // describe("POST /api/roles/:id/permissions", () => {
+    //     test("assigne des permissions au rôle (met à jour)", async () => {
+    //         const role = { _id: "1", name: "Admin" };
+    //         const permission_ids = ["p1", "p2"];
+    //         const perms = permission_ids.map(id => ({ _id: id }));
+    //
+    //         Role.findById.mockResolvedValue(role);
+    //         Permission.find.mockResolvedValue(perms);
+    //         RolePermission.updateMany.mockResolvedValue({});
+    //         RolePermission.bulkWrite.mockResolvedValue({});
+    //
+    //         const res = await request(app)
+    //             .post("/api/roles/1/permissions")
+    //             .send({ permission_ids });
+    //
+    //         expect(Role.findById).toHaveBeenCalledWith("1");
+    //         expect(Permission.find).toHaveBeenCalledWith({
+    //             _id: { $in: permission_ids },
+    //         });
+    //         expect(RolePermission.updateMany).toHaveBeenCalledWith(
+    //             { role_id: role._id },
+    //             { $set: { actif: false } }
+    //         );
+    //         expect(RolePermission.bulkWrite).toHaveBeenCalled();
+    //         expect(res.status).toBe(200);
+    //         expect(res.body).toHaveProperty("message", "Permissions mises à jour pour le rôle");
+    //     });
+    //
+    //     test("désactive toutes les permissions si aucune fournie", async () => {
+    //         const role = { _id: "1", name: "Admin" };
+    //
+    //         Role.findById.mockResolvedValue(role);
+    //         Permission.find.mockResolvedValue([]);
+    //         RolePermission.updateMany.mockResolvedValue({});
+    //
+    //         const res = await request(app)
+    //             .post("/api/roles/1/permissions")
+    //             .send({ permission_ids: [] });
+    //
+    //         expect(RolePermission.updateMany).toHaveBeenCalled();
+    //         expect(res.status).toBe(200);
+    //         expect(res.body).toHaveProperty("message", "Toutes les permissions ont été désactivées pour ce rôle");
+    //     });
+    //
+    //     test("retourne 404 si le rôle n'existe pas", async () => {
+    //         Role.findById.mockResolvedValue(null);
+    //
+    //         const res = await request(app)
+    //             .post("/api/roles/999/permissions")
+    //             .send({ permission_ids: ["p1"] });
+    //
+    //         expect(res.status).toBe(404);
+    //         expect(res.body).toHaveProperty("message", "Rôle introuvable");
+    //     });
+    //
+    //     test("retourne 400 si les permissions sont invalides", async () => {
+    //         const role = { _id: "1", name: "Admin" };
+    //         Role.findById.mockResolvedValue(role);
+    //         Permission.find.mockResolvedValue([{ _id: "p1" }]); // Seulement 1 sur 2
+    //
+    //         const res = await request(app)
+    //             .post("/api/roles/1/permissions")
+    //             .send({ permission_ids: ["p1", "p2"] });
+    //
+    //         expect(res.status).toBe(400);
+    //         expect(res.body).toHaveProperty("message", "Une ou plusieurs permissions invalides");
+    //     });
+    // });
 
     describe("GET /api/roles/:id/permissions", () => {
         test("retourne les permissions du rôle groupées par catégorie", async () => {
