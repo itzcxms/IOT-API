@@ -8,6 +8,21 @@ const requirePermission = require("../middleware/requirePermission.js");
 const router = Router();
 module.exports = router;
 
+// GET /api/users/me
+router.get("/me", auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+            .select("-password -passwordHash -__v") // adaptez selon votre modèle
+            .populate("role_id");
+
+        if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
+
+        return res.json(user);
+    } catch (e) {
+        return res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
 // GET /api/users/all
 router.get("/all", auth, requirePermission("users.view"), async (req, res) => {
     try {
