@@ -16,9 +16,10 @@ const client = require('./addons/mqttServer');
 const authRoutes = require ("./routes/auth.routes");
 const userRoutes = require ("./routes/user.routes");
 const roleRoutes = require ("./routes/role.routes");
-const seulRoutes = require("./routes/seuil.routes.js");
+const seuilRoutes = require("./routes/seuil.routes");
+const savonRoutes = require("./routes/savon.routes");
 const permissionRoutes = require ("./routes/permission.routes");
-const capteursGraphRoutes = require("./routes/capteursGraph.routes.js");
+const capteursGraphRoutes = require("./routes/capteursGraph.routes");
 const questionnaireRoutes = require("./routes/questionnaire.routes");
 
 app.get("/api/", (req, res) => res.json({ status: "API OK" }));
@@ -26,7 +27,8 @@ app.get("/api/", (req, res) => res.json({ status: "API OK" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
-app.use("/api/seuils", seulRoutes);
+app.use("/api/savon", savonRoutes)
+app.use("/api/seuils", seuilRoutes);
 app.use("/api/permissions", permissionRoutes);
 app.use("/api/graphs/capteurs", capteursGraphRoutes);
 app.use("/api/questionnaires", questionnaireRoutes);
