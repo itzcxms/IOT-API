@@ -140,20 +140,34 @@ router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) 
 });
 
 // PUT /api/users/update/:id
-router.put("/update/:id", auth, requirePermission("users.update"),  async (req, res) => {
+router.put("/update/:id", auth, requirePermission("users.update"), async (req, res) => {
     try {
         const data = req.body;
 
+        // Charger l'utilisateur existant pour comparer
+        const existing = await User.findById(req.params.id);
+        if (!existing) {
+            return res.status(404).json({ message: "Utilisateur introuvable" });
+        }
+
         // Si on veut changer de rôle, vérifier que le rôle existe
+        let roleChanged = false;
         if (data.role_id) {
             const role = await Role.findById(data.role_id);
             if (!role) {
                 return res.status(400).json({ message: "Rôle invalide" });
             }
+            // Comparaison string pour éviter les soucis d'ObjectId
+            roleChanged = String(existing.role_id) !== String(data.role_id);
         }
 
         if (data.password) {
             data.password = await bcrypt.hash(data.password, 10);
+        }
+
+        // Si rôle changé -> bump version (déclencheur front)
+        if (roleChanged) {
+            data.authzVersion = (existing.authzVersion || 0) + 1;
         }
 
         const user = await User.findByIdAndUpdate(req.params.id, data, {
@@ -163,16 +177,13 @@ router.put("/update/:id", auth, requirePermission("users.update"),  async (req, 
             .select("-password")
             .populate("role_id");
 
-        if (!user) {
-            return res.status(404).json({ message: "Utilisateur introuvable" });
-        }
-
         res.json(user);
     } catch (e) {
         console.error(e);
         res.status(400).json({ message: e.message });
     }
 });
+
 
 // DELETE /api/users/delete/:id
 router.delete("/delete/:id", auth, requirePermission("users.delete"), async (req, res) => {
