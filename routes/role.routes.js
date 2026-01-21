@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const User = require('../models/User');
 const Role = require("../models/Role.js");
 const RolePermission = require("../models/RolePermission.js");
 const Permission = require("../models/Permission.js");
@@ -196,56 +197,46 @@ router.get(
  */
 router.post(
     "/:roleid/permissions/:permid",
-    // auth,
-    // requirePermission("roles.assign_permissions"),
+    auth,
+    requirePermission("roles.assign_permissions"),
     async (req, res) => {
         try {
             const { actif } = req.body;
             const { roleid, permid } = req.params;
 
-            // Validation du body
-            if (typeof actif !== 'boolean') {
+            if (typeof actif !== "boolean") {
                 return res.status(400).json({
-                    message: "Le champ 'actif' doit être un booléen (true/false)"
+                    message: "Le champ 'actif' doit être un booléen (true/false)",
                 });
             }
 
-            // Vérifier que le rôle existe
             const role = await Role.findById(roleid);
-            if (!role) {
-                return res.status(404).json({ message: "Rôle introuvable" });
-            }
+            if (!role) return res.status(404).json({ message: "Rôle introuvable" });
 
-            // Vérifier que la permission existe
             const permission = await Permission.findById(permid);
-            if (!permission) {
+            if (!permission)
                 return res.status(404).json({ message: "Permission introuvable" });
-            }
 
-            // Mettre à jour ou créer la relation role-permission
             const result = await RolePermission.findOneAndUpdate(
                 { role_id: roleid, permission_id: permid },
-                {
-                    $set: {
-                        role_id: roleid,
-                        permission_id: permid,
-                        actif: actif
-                    }
-                },
-                {
-                    upsert: true,
-                    new: true
-                }
+                { $set: { role_id: roleid, permission_id: permid, actif } },
+                { upsert: true, new: true }
+            );
+
+            // IMPORTANT: bump authzVersion de tous les users du rôle
+            await User.updateMany(
+                { role_id: roleid },
+                { $inc: { authzVersion: 1 } }
             );
 
             res.json({
-                message: `Permission ${actif ? 'activée' : 'désactivée'} pour le rôle`,
-                data: result
+                message: `Permission ${actif ? "activée" : "désactivée"} pour le rôle`,
+                data: result,
             });
-
         } catch (e) {
             console.error(e);
             res.status(400).json({ message: e.message });
         }
     }
 );
+
