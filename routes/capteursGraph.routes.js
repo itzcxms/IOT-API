@@ -85,6 +85,7 @@ function buildBaseMatch(modelType, body) {
  * Retourne: Dernière valeur enregistrée avec sa date d'insertion
  */
 router.post("/lastinfo",
+    auth,
     async (req, res) =>
     {
         try {
@@ -168,7 +169,7 @@ router.post("/lastinfo",
     }
 );
 
-router.post("/week", async (req, res) => {
+router.post("/week", auth, async (req, res) => {
     try {
         const { model, type: modelType } = resolveModel(req.body.type);
         const baseMatch = buildBaseMatch(modelType, req.body);

@@ -10,7 +10,7 @@ module.exports = router;
 
 // GET /api/roles/all
 // récupere les roles contenant le poids entre 1 a 100 uniquement.
-router.get("/all", async (req, res) => {
+router.get("/all", auth, async (req, res) => {
     try {
         const roles = await Role.find({
             poids: { $gte: 1, $lte: 100 } // poids a modifier si vous voulez plus de role.
@@ -24,7 +24,7 @@ router.get("/all", async (req, res) => {
 });
 
 // POST /api/roles/create
-router.post("/create", async (req, res) => {
+router.post("/create", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         // 1) Création du rôle
         const role = await Role.create(req.body);
@@ -62,7 +62,7 @@ req.body = {
   "permissions": ["<permissionId1>", "<permissionId2>"]
 }
  */
-router.put("/update/:id", auth, requirePermission("roles.update"), async (req, res) => {
+router.put("/update/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -81,7 +81,7 @@ router.put("/update/:id", auth, requirePermission("roles.update"), async (req, r
 });
 
 // DELETE /api/roles/delete/:id
-router.delete("/delete/:id", auth, requirePermission("roles.delete"), async (req, res) => {
+router.delete("/delete/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const role = await Role.findByIdAndDelete(req.params.id);
 
@@ -162,10 +162,9 @@ router.get(
     auth,
     async (req, res) => {
         try {
-            const links = await RolePermission.find({ role_id: req.params.id }).populate(
-                "permission_id"
-            );
+            const links = await RolePermission.find({ role_id: req.params.id }).populate("permission_id");
             let response = links.map((l) => JSON.parse(JSON.stringify(l.permission_id)));
+
             let data = {};
             for (let i = 0; i < response.length; i++) {
                 response[i]["active"] = links[i]["actif"];

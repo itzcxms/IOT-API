@@ -7,7 +7,7 @@ const router = Router();
 module.exports = router;
 
 // GET - Récupérer tous les capteur_id (unique)
-router.get("/capteurs", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/capteurs", auth, async (req, res) => {
     try {
         const capteurs = await Seuil.distinct("capteur_id");
         res.json(capteurs);
@@ -17,7 +17,7 @@ router.get("/capteurs", auth, requirePermission("seuils.view"), async (req, res)
 });
 
 // GET - Récupérer tous les seuils
-router.get("/", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/", auth, async (req, res) => {
     try {
         const seuils = await Seuil.find().sort({ createdAt: -1 });
         res.json(seuils);
@@ -27,7 +27,7 @@ router.get("/", auth, requirePermission("seuils.view"), async (req, res) => {
 });
 
 // GET - Récupérer les seuils de type "savon"
-router.get("/savon", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/savon", auth, async (req, res) => {
     try {
         const seuils = await Seuil.find({ type: "savon" }).sort({ createdAt: -1 });
         res.json(seuils);
@@ -37,7 +37,7 @@ router.get("/savon", auth, requirePermission("seuils.view"), async (req, res) =>
 });
 
 // GET - Récupérer les seuils de type "eau"
-router.get("/eau", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/eau", auth, async (req, res) => {
     try {
         const seuils = await Seuil.find({ type: "eau" }).sort({ createdAt: -1 });
         res.json(seuils);
@@ -47,7 +47,7 @@ router.get("/eau", auth, requirePermission("seuils.view"), async (req, res) => {
 });
 
 // GET - Récupérer les seuils par capteur_id (recherche partielle)
-router.get("/capteur/:capteur_id", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/capteur/:capteur_id", auth, async (req, res) => {
     try {
         const seuils = await Seuil.find({
             capteur_id: { $regex: req.params.capteur_id, $options: 'i' }
@@ -59,7 +59,7 @@ router.get("/capteur/:capteur_id", auth, requirePermission("seuils.view"), async
 });
 
 // GET - Récupérer les seuils par capteur_id ET type (recherche partielle sur le capteur_id)
-router.get("/capteur/:capteur_id/:type", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/capteur/:capteur_id/:type", auth, async (req, res) => {
     try {
         const seuils = await Seuil.find({
             capteur_id: { $regex: req.params.capteur_id, $options: 'i' },
@@ -72,7 +72,7 @@ router.get("/capteur/:capteur_id/:type", auth, requirePermission("seuils.view"),
 });
 
 // GET - Récupérer un seuil par ID MongoDB
-router.get("/:id", auth, requirePermission("seuils.view"), async (req, res) => {
+router.get("/:id", auth, async (req, res) => {
     try {
         const seuil = await Seuil.findById(req.params.id);
         if (!seuil) return res.status(404).json({ message: "Seuil non trouvé" });
@@ -83,7 +83,7 @@ router.get("/:id", auth, requirePermission("seuils.view"), async (req, res) => {
 });
 
 // POST - Créer un nouveau seuil
-router.post("/", auth, requirePermission("seuils.create"), async (req, res) => {
+router.post("/", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const seuil = new Seuil(req.body);
         const nouveauSeuil = await seuil.save();
@@ -94,7 +94,7 @@ router.post("/", auth, requirePermission("seuils.create"), async (req, res) => {
 });
 
 // PUT - Mettre à jour un seuil
-router.put("/:id", auth, requirePermission("seuils.update"), async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
     try {
         const seuil = await Seuil.findByIdAndUpdate(
             req.params.id,
@@ -109,7 +109,7 @@ router.put("/:id", auth, requirePermission("seuils.update"), async (req, res) =>
 });
 
 // DELETE - Supprimer un seuil
-router.delete("/:id", auth, requirePermission("seuils.delete"), async (req, res) => {
+router.delete("/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const seuil = await Seuil.findByIdAndDelete(req.params.id);
         if (!seuil) return res.status(404).json({ message: "Seuil non trouvé" });

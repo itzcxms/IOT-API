@@ -9,7 +9,7 @@ const router = Router();
 module.exports = router;
 
 // GET /api/permissions/all
-router.get("/all", async (req, res) => {
+router.get("/all", auth, async (req, res) => {
     try {
         const permissions = await Permission.find().sort({ createdAt: -1 });
         res.json(permissions);
@@ -20,7 +20,7 @@ router.get("/all", async (req, res) => {
 });
 
 // GET /api/permissions/:id
-router.get("/:id", auth, requirePermission("permissions.view"), async (req, res) => {
+router.get("/:id", auth, async (req, res) => {
     try {
         const perm = await Permission.findById(req.params.id);
         if (!perm) {
@@ -36,6 +36,8 @@ router.get("/:id", auth, requirePermission("permissions.view"), async (req, res)
 // POST /api/permissions/create
 router.post(
     "/create",
+    auth,
+    requirePermission("superadmin"),
     async (req, res) => {
         try {
             // 1) Création de la permission
@@ -76,7 +78,7 @@ req.body = {
 }
 
 */
-router.put("/update/:id", async (req, res) => {
+router.put("/update/:id", auth, requirePermission("permissions.update"), async (req, res) => {
     try {
         const perm = await Permission.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -95,7 +97,7 @@ router.put("/update/:id", async (req, res) => {
 });
 
 // DELETE /api/permissions/delete/:id
-router.delete("/delete/:id", auth, requirePermission("permissions.delete"), async (req, res) => {
+router.delete("/delete/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const perm = await Permission.findByIdAndDelete(req.params.id);
 

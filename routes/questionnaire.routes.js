@@ -106,7 +106,7 @@ async function computeStats({ startDate = null, endDate = null, byPeriodMode = n
 // ROUTE 1 : ALL (pas de start/end)
 // GET /api/questionnaires/stats/all
 // --------------------
-router.get("/stats/all", async (req, res) => {
+router.get("/stats/all", auth, async (req, res) => {
     try {
         const stats = await computeStats({ startDate: null, endDate: null, byPeriodMode: null });
 
@@ -124,7 +124,7 @@ router.get("/stats/all", async (req, res) => {
 // POST /api/questionnaires/stats/day
 // Body: { date: "YYYY-MM-DD" }
 // --------------------
-router.post("/stats/day", async (req, res) => {
+router.post("/stats/day", auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
         if (!raw) return res.status(400).json({ message: "Paramètre date invalide (YYYY-MM-DD)" });
@@ -148,7 +148,7 @@ router.post("/stats/day", async (req, res) => {
 // POST /api/questionnaires/stats/week
 // Body: { date: "YYYY-MM-DD" }  => end = +7 jours
 // --------------------
-router.post("/stats/week", async (req, res) => {
+router.post("/stats/week", auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
         if (!raw) return res.status(400).json({ message: "Paramètre date invalide (YYYY-MM-DD)" });
@@ -172,7 +172,7 @@ router.post("/stats/week", async (req, res) => {
 // POST /api/questionnaires/stats/month
 // Body: { date: "YYYY-MM-DD" } => mois/année du jour fourni
 // --------------------
-router.post("/stats/month", async (req, res) => {
+router.post("/stats/month",auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
         if (!raw) return res.status(400).json({ message: "Paramètre date invalide (YYYY-MM-DD)" });
@@ -195,7 +195,7 @@ router.post("/stats/month", async (req, res) => {
 // POST /api/questionnaires/stats/year
 // Body: { date: "YYYY" } => année du jour fourni
 // --------------------
-router.post("/stats/year", async (req, res) => {
+router.post("/stats/year", auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
         if (!raw) return res.status(400).json({ message: "Paramètre date invalide (YYYY-MM-DD)" });
@@ -227,8 +227,7 @@ router.post("/stats/year", async (req, res) => {
  * }
  */
 router.post("/",
-    // auth,
-    // requirePermission(""),
+    auth,
     async (req, res) => {
     try {
         const {
@@ -286,7 +285,7 @@ router.post("/",
 // ROUTE : Récupération des commentaires + date
 // GET /api/questionnaires/comments
 // --------------------
-router.get("/comments", async (req, res) => {
+router.get("/comments", auth, async (req, res) => {
     try {
         const comments = await Questionnaire.find(
             { remarques: { $ne: "" } },           // uniquement ceux avec un commentaire

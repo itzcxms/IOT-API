@@ -124,42 +124,6 @@ router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) 
     }
 });
 
-// // POST /api/users/create
-// router.post("/create", auth, requirePermission("users.create"), async (req, res) => {
-//     try {
-//         const { nom, prenom, email, password, role_id, actif } = req.body;
-//
-//         const role = await Role.findById(role_id);
-//         if (!role) {
-//             return res.status(400).json({ message: "Rôle invalide" });
-//         }
-//
-//         const exists = await User.findOne({ email });
-//         if (exists) {
-//             return res.status(409).json({ message: "Email déjà utilisé" });
-//         }
-//
-//         const hash = await bcrypt.hash(password, 10);
-//
-//         const user = await User.create({
-//             nom,
-//             prenom,
-//             email,
-//             password: hash,
-//             role_id,
-//             actif: actif ?? true,
-//         });
-//
-//         const userObj = user.toObject();
-//         delete userObj.password;
-//
-//         res.status(201).json(userObj);
-//     } catch (e) {
-//         console.error(e);
-//         res.status(400).json({ message: e.message });
-//     }
-// });
-
 // PUT /api/users/update/:id
 router.put("/update/:id", auth, requirePermission("users.update"),  async (req, res) => {
     try {
