@@ -224,10 +224,12 @@ router.post(
             );
 
             // IMPORTANT: bump authzVersion de tous les users du rôle
-            await User.updateMany(
+            const user = await User.updateMany(
                 { role_id: roleid },
                 { $inc: { authzVersion: 1 } }
             );
+
+            console.log(user);
 
             res.json({
                 message: `Permission ${actif ? "activée" : "désactivée"} pour le rôle`,
