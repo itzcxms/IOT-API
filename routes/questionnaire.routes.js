@@ -1,5 +1,4 @@
 const { Router } = require("express");
-const requirePermission = require("../middleware/requirePermission.js");
 const auth = require("../middleware/auth.js");
 const Questionnaire = require("../models/Questionnaire");
 
@@ -42,9 +41,6 @@ function countValuesWithZeros(arr) {
 }
 
 async function computeStats({ startDate = null, endDate = null, byPeriodMode = null }) {
-    // byPeriodMode: null | "day" | "week" | "month" | "year"
-    // Pour les routes filtrées, on renvoie un byPeriod “1 point” sur la période.
-
     const matchStage = {};
     if (startDate || endDate) {
         matchStage.createdAt = {};
@@ -61,9 +57,19 @@ async function computeStats({ startDate = null, endDate = null, byPeriodMode = n
                 satisfactionAire: { $push: "$satisfactionAire" },
                 satisfactionSecurite: { $push: "$satisfactionSecurite" },
                 satisfactionServices: { $push: "$satisfactionServices" },
+                sourcesConnaissance: { $push: "$sourcesConnaissance" }, // AJOUT ICI
             },
         },
-        { $project: { _id: 0, total: 1, satisfactionAire: 1, satisfactionSecurite: 1, satisfactionServices: 1 } },
+        {
+            $project: {
+                _id: 0,
+                total: 1,
+                satisfactionAire: 1,
+                satisfactionSecurite: 1,
+                satisfactionServices: 1,
+                sourcesConnaissance: 1 // AJOUT ICI
+            }
+        },
     ];
 
     const [summary] = await Questionnaire.aggregate(pipeline);
@@ -73,15 +79,22 @@ async function computeStats({ startDate = null, endDate = null, byPeriodMode = n
         satisfactionAire: [],
         satisfactionSecurite: [],
         satisfactionServices: [],
+        sourcesConnaissance: [], // AJOUT ICI
     };
 
     const distributions = {
         satisfactionAire: countValuesWithZeros(safe.satisfactionAire),
         satisfactionSecurite: countValuesWithZeros(safe.satisfactionSecurite),
-        satisfactionServices: countValuesWithZeros(safe.satisfactionServices),
+        satisfactionServices: countValuesWithZeros(safe.satisfactionServices)
     };
 
-    // byPeriod : format demandé
+    // Comptage des sources de connaissance (avec aplatissement du tableau)
+    const flatSources = safe.sourcesConnaissance.flat();
+    const sourcesCount = {};
+    flatSources.forEach(source => {
+        sourcesCount[source] = (sourcesCount[source] || 0) + 1;
+    });
+
     let byPeriod = [];
     if (byPeriodMode && startDate) {
         if (byPeriodMode === "day") {
@@ -98,6 +111,7 @@ async function computeStats({ startDate = null, endDate = null, byPeriodMode = n
     return {
         total: safe.total || 0,
         distributions,
+        sourcesConnaissance: sourcesCount,
         byPeriod,
     };
 }
