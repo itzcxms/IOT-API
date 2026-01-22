@@ -1,25 +1,13 @@
-// __tests__/seuils/seuils.routes.test.js
 const request = require("supertest");
 const express = require("express");
 
-// Mocks (même approche que roles.test.js)
-jest.mock("../../models/Seuils.js", () => ({
-    distinct: jest.fn(),
-    find: jest.fn(),
-    findById: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    findByIdAndDelete: jest.fn(),
-}));
-
-// Mock du "constructor" (new Seuil(req.body)) + save()
+// Mock du model Seuils
 jest.mock("../../models/Seuils.js", () => {
-    // constructeur mocké => supporte Seuil.mockImplementation(...)
     const Seuil = jest.fn(function (data) {
         this.data = data;
         this.save = jest.fn();
     });
 
-    // méthodes "statiques" façon Model mongoose
     Seuil.distinct = jest.fn();
     Seuil.find = jest.fn();
     Seuil.findById = jest.fn();
@@ -29,19 +17,27 @@ jest.mock("../../models/Seuils.js", () => {
     return Seuil;
 });
 
-
+// Auth mock
 jest.mock("../../middleware/auth", () => {
-    return (req, res, next) => {
-        req.user = { id: "test-user" };
+    return jest.fn((req, res, next) => {
+        const role = req.get("x-role") || "user";
+        req.user = { id: "test-user", role };
         next();
-    };
+    });
 });
 
+// Permission mock
 jest.mock("../../middleware/requirePermission.js", () => {
-    return () => (req, res, next) => next();
+    return jest.fn((requiredRole) => (req, res, next) => {
+        if (requiredRole && req.user?.role !== requiredRole) {
+            return res.status(403).json({ message: "Accès refusé" });
+        }
+        return next();
+    });
 });
 
 const Seuil = require("../../models/Seuils.js");
+const auth = require("../../middleware/auth");
 const seuilRoutes = require("../../routes/seuil.routes.js");
 
 describe("Seuils routes", () => {
@@ -54,8 +50,67 @@ describe("Seuils routes", () => {
         jest.clearAllMocks();
     });
 
+    describe("Middlewares (wiring)", () => {
+        test("auth est bien exécuté sur une route simple", async () => {
+            Seuil.find.mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
+
+            await request(app).get("/api/seuils");
+
+            expect(auth).toHaveBeenCalled();
+        });
+
+        test("POST et DELETE sont bien protégés (403 si pas superadmin)", async () => {
+            // POST refusé
+            Seuil.mockImplementation(function () {
+                this.save = jest.fn().mockResolvedValue({ _id: "id1" });
+            });
+
+            const postRes = await request(app)
+                .post("/api/seuils")
+                .set("x-role", "user")
+                .send({ nom: "X", type: "savon", unite: "ml", seuil: 1, capteur_id: "SAV-1" });
+
+            expect(postRes.status).toBe(403);
+            expect(postRes.body).toHaveProperty("message", "Accès refusé");
+
+            // DELETE refusé
+            Seuil.findByIdAndDelete.mockResolvedValue({ _id: "id1" });
+
+            const delRes = await request(app)
+                .delete("/api/seuils/id1")
+                .set("x-role", "user");
+
+            expect(delRes.status).toBe(403);
+            expect(delRes.body).toHaveProperty("message", "Accès refusé");
+        });
+
+        test("POST et DELETE passent si superadmin", async () => {
+            // POST autorisé
+            Seuil.mockImplementation(function (data) {
+                this.data = data;
+                this.save = jest.fn().mockResolvedValue({ _id: "id1", ...data });
+            });
+
+            const postRes = await request(app)
+                .post("/api/seuils")
+                .set("x-role", "superadmin")
+                .send({ nom: "X", type: "savon", unite: "ml", seuil: 1, capteur_id: "SAV-1" });
+
+            expect(postRes.status).toBe(201);
+
+            // DELETE autorisé
+            Seuil.findByIdAndDelete.mockResolvedValue({ _id: "id1" });
+
+            const delRes = await request(app)
+                .delete("/api/seuils/id1")
+                .set("x-role", "superadmin");
+
+            expect(delRes.status).toBe(200);
+        });
+    });
+
     describe("GET /api/seuils/capteurs", () => {
-        test("retourne la liste des capteur_id distincts", async () => {
+        test("200 retourne les capteur_id distincts", async () => {
             Seuil.distinct.mockResolvedValue(["SAV-001", "EAU-001"]);
 
             const res = await request(app).get("/api/seuils/capteurs");
@@ -71,12 +126,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/capteurs");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
     describe("GET /api/seuils", () => {
-        test("retourne tous les seuils triés", async () => {
+        test("200 retourne tous les seuils triés (createdAt desc)", async () => {
             const seuils = [{ nom: "A" }, { nom: "B" }];
             const sortMock = jest.fn().mockResolvedValue(seuils);
 
@@ -98,12 +153,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
     describe("GET /api/seuils/savon", () => {
-        test('retourne les seuils de type "savon"', async () => {
+        test('200 retourne les seuils de type "savon"', async () => {
             const seuils = [{ type: "savon" }];
             const sortMock = jest.fn().mockResolvedValue(seuils);
 
@@ -125,12 +180,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/savon");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
     describe("GET /api/seuils/eau", () => {
-        test('retourne les seuils de type "eau"', async () => {
+        test('200 retourne les seuils de type "eau"', async () => {
             const seuils = [{ type: "eau" }];
             const sortMock = jest.fn().mockResolvedValue(seuils);
 
@@ -152,12 +207,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/eau");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
     describe("GET /api/seuils/capteur/:capteur_id", () => {
-        test("retourne les seuils filtrés par capteur_id (regex)", async () => {
+        test("200 filtre par capteur_id (regex, case-insensitive)", async () => {
             const seuils = [{ capteur_id: "SAV-001" }];
             const sortMock = jest.fn().mockResolvedValue(seuils);
 
@@ -181,12 +236,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/capteur/SAV");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
     describe("GET /api/seuils/capteur/:capteur_id/:type", () => {
-        test("retourne les seuils filtrés par capteur_id (regex) et type", async () => {
+        test("200 filtre par capteur_id (regex) et type", async () => {
             const seuils = [{ capteur_id: "SAV-001", type: "savon" }];
             const sortMock = jest.fn().mockResolvedValue(seuils);
 
@@ -211,12 +266,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/capteur/SAV/savon");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
     describe("GET /api/seuils/:id", () => {
-        test("retourne un seuil par ID", async () => {
+        test("200 retourne un seuil par ID", async () => {
             const seuil = { _id: "id1", nom: "Seuil A" };
             Seuil.findById.mockResolvedValue(seuil);
 
@@ -233,7 +288,7 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/id404");
 
             expect(res.status).toBe(404);
-            expect(res.body).toHaveProperty("message", "Seuil non trouvé");
+            expect(res.body).toEqual({ message: "Seuil non trouvé" });
         });
 
         test("500 si erreur serveur", async () => {
@@ -242,12 +297,12 @@ describe("Seuils routes", () => {
             const res = await request(app).get("/api/seuils/id1");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 
-    describe("POST /api/seuils/", () => {
-        test("201 crée un seuil", async () => {
+    describe("POST /api/seuils", () => {
+        test("201 crée un seuil (new Seuil(req.body).save())", async () => {
             const body = {
                 nom: "Seuil Savon",
                 type: "savon",
@@ -256,32 +311,38 @@ describe("Seuils routes", () => {
                 capteur_id: "SAV-001",
             };
 
-            // new Seuil(body).save()
             Seuil.mockImplementation(function (data) {
                 this.data = data;
                 this.save = jest.fn().mockResolvedValue({ _id: "id1", ...data });
             });
 
-            const res = await request(app).post("/api/seuils/").send(body);
+            const res = await request(app)
+                .post("/api/seuils")
+                .set("x-role", "superadmin")
+                .send(body);
 
+            expect(Seuil).toHaveBeenCalledWith(body);
             expect(res.status).toBe(201);
             expect(res.body).toEqual({ _id: "id1", ...body });
         });
 
-        test("400 si erreur validation/DB", async () => {
+        test("400 si erreur de validation/DB", async () => {
             Seuil.mockImplementation(function () {
                 this.save = jest.fn().mockRejectedValue(new Error("Validation failed"));
             });
 
-            const res = await request(app).post("/api/seuils/").send({});
+            const res = await request(app)
+                .post("/api/seuils")
+                .set("x-role", "superadmin")
+                .send({});
 
             expect(res.status).toBe(400);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "Validation failed" });
         });
     });
 
     describe("PUT /api/seuils/:id", () => {
-        test("met à jour un seuil", async () => {
+        test("200 met à jour un seuil (runValidators: true)", async () => {
             const updated = { _id: "id1", nom: "Maj" };
             Seuil.findByIdAndUpdate.mockResolvedValue(updated);
 
@@ -302,7 +363,7 @@ describe("Seuils routes", () => {
             const res = await request(app).put("/api/seuils/id404").send({ nom: "X" });
 
             expect(res.status).toBe(404);
-            expect(res.body).toHaveProperty("message", "Seuil non trouvé");
+            expect(res.body).toEqual({ message: "Seuil non trouvé" });
         });
 
         test("400 si erreur validation/DB", async () => {
@@ -311,16 +372,17 @@ describe("Seuils routes", () => {
             const res = await request(app).put("/api/seuils/id1").send({ seuil: "bad" });
 
             expect(res.status).toBe(400);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "Validation failed" });
         });
     });
 
     describe("DELETE /api/seuils/:id", () => {
-        test("supprime un seuil", async () => {
-            const seuil = { _id: "id1" };
-            Seuil.findByIdAndDelete.mockResolvedValue(seuil);
+        test("200 supprime un seuil", async () => {
+            Seuil.findByIdAndDelete.mockResolvedValue({ _id: "id1" });
 
-            const res = await request(app).delete("/api/seuils/id1");
+            const res = await request(app)
+                .delete("/api/seuils/id1")
+                .set("x-role", "superadmin");
 
             expect(Seuil.findByIdAndDelete).toHaveBeenCalledWith("id1");
             expect(res.status).toBe(200);
@@ -330,19 +392,23 @@ describe("Seuils routes", () => {
         test("404 si seuil non trouvé", async () => {
             Seuil.findByIdAndDelete.mockResolvedValue(null);
 
-            const res = await request(app).delete("/api/seuils/id404");
+            const res = await request(app)
+                .delete("/api/seuils/id404")
+                .set("x-role", "superadmin");
 
             expect(res.status).toBe(404);
-            expect(res.body).toHaveProperty("message", "Seuil non trouvé");
+            expect(res.body).toEqual({ message: "Seuil non trouvé" });
         });
 
         test("500 si erreur serveur", async () => {
             Seuil.findByIdAndDelete.mockRejectedValue(new Error("DB Error"));
 
-            const res = await request(app).delete("/api/seuils/id1");
+            const res = await request(app)
+                .delete("/api/seuils/id1")
+                .set("x-role", "superadmin");
 
             expect(res.status).toBe(500);
-            expect(res.body).toHaveProperty("message");
+            expect(res.body).toEqual({ message: "DB Error" });
         });
     });
 });

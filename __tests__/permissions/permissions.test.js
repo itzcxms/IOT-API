@@ -54,7 +54,7 @@ describe("Permissions routes", () => {
             categorie: "Users",
             description: "Permission de lecture",
             name: "Permissions lecture",
-            value: "permissions.read"
+            value: "permissions.create"
         };
         const created = { _id: "1", ...body };
         const mockRoles = [
@@ -86,7 +86,7 @@ describe("Permissions routes", () => {
             _id: "1",
             categorie: "Users",
             name: "Updated",
-            value: "permissions.read",
+            value: "permissions.update",
             description: "Updated desc"
         };
 

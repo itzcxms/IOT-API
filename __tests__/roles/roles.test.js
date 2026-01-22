@@ -1,6 +1,7 @@
 // __tests__/roles/roles.routes.test.js
 const request = require("supertest");
 const express = require("express");
+const mongoose = require("mongoose");
 
 // Mocks
 jest.mock("../../models/Role.js", () => ({
@@ -25,6 +26,11 @@ jest.mock("../../models/Permission.js", () => ({
     findById: jest.fn(),
 }));
 
+// Mock User avec updateMany qui fonctionne correctement
+jest.mock("../../models/User.js", () => ({
+    updateMany: jest.fn(),
+}));
+
 jest.mock("../../middleware/auth.js", () => {
     return (req, res, next) => {
         req.user = { id: "test-user" };
@@ -39,6 +45,7 @@ jest.mock("../../middleware/requirePermission.js", () => {
 const Role = require("../../models/Role.js");
 const RolePermission = require("../../models/RolePermission.js");
 const Permission = require("../../models/Permission.js");
+const User = require("../../models/User.js");
 const roleRoutes = require("../../routes/role.routes.js");
 
 describe("Roles routes", () => {
@@ -187,75 +194,6 @@ describe("Roles routes", () => {
         });
     });
 
-    // describe("POST /api/roles/:id/permissions", () => {
-    //     test("assigne des permissions au rôle (met à jour)", async () => {
-    //         const role = { _id: "1", name: "Admin" };
-    //         const permission_ids = ["p1", "p2"];
-    //         const perms = permission_ids.map(id => ({ _id: id }));
-    //
-    //         Role.findById.mockResolvedValue(role);
-    //         Permission.find.mockResolvedValue(perms);
-    //         RolePermission.updateMany.mockResolvedValue({});
-    //         RolePermission.bulkWrite.mockResolvedValue({});
-    //
-    //         const res = await request(app)
-    //             .post("/api/roles/1/permissions")
-    //             .send({ permission_ids });
-    //
-    //         expect(Role.findById).toHaveBeenCalledWith("1");
-    //         expect(Permission.find).toHaveBeenCalledWith({
-    //             _id: { $in: permission_ids },
-    //         });
-    //         expect(RolePermission.updateMany).toHaveBeenCalledWith(
-    //             { role_id: role._id },
-    //             { $set: { actif: false } }
-    //         );
-    //         expect(RolePermission.bulkWrite).toHaveBeenCalled();
-    //         expect(res.status).toBe(200);
-    //         expect(res.body).toHaveProperty("message", "Permissions mises à jour pour le rôle");
-    //     });
-    //
-    //     test("désactive toutes les permissions si aucune fournie", async () => {
-    //         const role = { _id: "1", name: "Admin" };
-    //
-    //         Role.findById.mockResolvedValue(role);
-    //         Permission.find.mockResolvedValue([]);
-    //         RolePermission.updateMany.mockResolvedValue({});
-    //
-    //         const res = await request(app)
-    //             .post("/api/roles/1/permissions")
-    //             .send({ permission_ids: [] });
-    //
-    //         expect(RolePermission.updateMany).toHaveBeenCalled();
-    //         expect(res.status).toBe(200);
-    //         expect(res.body).toHaveProperty("message", "Toutes les permissions ont été désactivées pour ce rôle");
-    //     });
-    //
-    //     test("retourne 404 si le rôle n'existe pas", async () => {
-    //         Role.findById.mockResolvedValue(null);
-    //
-    //         const res = await request(app)
-    //             .post("/api/roles/999/permissions")
-    //             .send({ permission_ids: ["p1"] });
-    //
-    //         expect(res.status).toBe(404);
-    //         expect(res.body).toHaveProperty("message", "Rôle introuvable");
-    //     });
-    //
-    //     test("retourne 400 si les permissions sont invalides", async () => {
-    //         const role = { _id: "1", name: "Admin" };
-    //         Role.findById.mockResolvedValue(role);
-    //         Permission.find.mockResolvedValue([{ _id: "p1" }]); // Seulement 1 sur 2
-    //
-    //         const res = await request(app)
-    //             .post("/api/roles/1/permissions")
-    //             .send({ permission_ids: ["p1", "p2"] });
-    //
-    //         expect(res.status).toBe(400);
-    //         expect(res.body).toHaveProperty("message", "Une ou plusieurs permissions invalides");
-    //     });
-    // });
-
     describe("GET /api/roles/:id/permissions", () => {
         test("retourne les permissions du rôle groupées par catégorie", async () => {
             const links = [
@@ -321,30 +259,35 @@ describe("Roles routes", () => {
 
     describe("POST /api/roles/:roleid/permissions/:permid", () => {
         test("active une permission pour un rôle", async () => {
-            const role = { _id: "role1", name: "Admin" };
-            const permission = { _id: "perm1", name: "users.read" };
+            // Utiliser des ObjectId MongoDB valides
+            const roleId = new mongoose.Types.ObjectId().toString();
+            const permId = new mongoose.Types.ObjectId().toString();
+
+            const role = { _id: roleId, name: "Admin" };
+            const permission = { _id: permId, name: "users.read" };
             const result = {
-                role_id: "role1",
-                permission_id: "perm1",
+                role_id: roleId,
+                permission_id: permId,
                 actif: true
             };
 
             Role.findById.mockResolvedValue(role);
             Permission.findById.mockResolvedValue(permission);
             RolePermission.findOneAndUpdate.mockResolvedValue(result);
+            User.updateMany.mockResolvedValue({ modifiedCount: 2 });
 
             const res = await request(app)
-                .post("/api/roles/role1/permissions/perm1")
+                .post(`/api/roles/${roleId}/permissions/${permId}`)
                 .send({ actif: true });
 
-            expect(Role.findById).toHaveBeenCalledWith("role1");
-            expect(Permission.findById).toHaveBeenCalledWith("perm1");
+            expect(Role.findById).toHaveBeenCalledWith(roleId);
+            expect(Permission.findById).toHaveBeenCalledWith(permId);
             expect(RolePermission.findOneAndUpdate).toHaveBeenCalledWith(
-                { role_id: "role1", permission_id: "perm1" },
+                { role_id: roleId, permission_id: permId },
                 {
                     $set: {
-                        role_id: "role1",
-                        permission_id: "perm1",
+                        role_id: roleId,
+                        permission_id: permId,
                         actif: true
                     }
                 },
@@ -353,26 +296,34 @@ describe("Roles routes", () => {
                     new: true
                 }
             );
+            expect(User.updateMany).toHaveBeenCalledWith(
+                { role_id: roleId },
+                { $inc: { authzVersion: 1 } }
+            );
             expect(res.status).toBe(200);
             expect(res.body).toHaveProperty("message", "Permission activée pour le rôle");
             expect(res.body).toHaveProperty("data", result);
         });
 
         test("désactive une permission pour un rôle", async () => {
-            const role = { _id: "role1", name: "Admin" };
-            const permission = { _id: "perm1", name: "users.read" };
+            const roleId = new mongoose.Types.ObjectId().toString();
+            const permId = new mongoose.Types.ObjectId().toString();
+
+            const role = { _id: roleId, name: "Admin" };
+            const permission = { _id: permId, name: "users.read" };
             const result = {
-                role_id: "role1",
-                permission_id: "perm1",
+                role_id: roleId,
+                permission_id: permId,
                 actif: false
             };
 
             Role.findById.mockResolvedValue(role);
             Permission.findById.mockResolvedValue(permission);
             RolePermission.findOneAndUpdate.mockResolvedValue(result);
+            User.updateMany.mockResolvedValue({ modifiedCount: 2 });
 
             const res = await request(app)
-                .post("/api/roles/role1/permissions/perm1")
+                .post(`/api/roles/${roleId}/permissions/${permId}`)
                 .send({ actif: false });
 
             expect(res.status).toBe(200);
@@ -380,8 +331,11 @@ describe("Roles routes", () => {
         });
 
         test("retourne 400 si actif n'est pas un booléen", async () => {
+            const roleId = new mongoose.Types.ObjectId().toString();
+            const permId = new mongoose.Types.ObjectId().toString();
+
             const res = await request(app)
-                .post("/api/roles/role1/permissions/perm1")
+                .post(`/api/roles/${roleId}/permissions/${permId}`)
                 .send({ actif: "true" });
 
             expect(res.status).toBe(400);
@@ -389,10 +343,13 @@ describe("Roles routes", () => {
         });
 
         test("retourne 404 si le rôle n'existe pas", async () => {
+            const roleId = new mongoose.Types.ObjectId().toString();
+            const permId = new mongoose.Types.ObjectId().toString();
+
             Role.findById.mockResolvedValue(null);
 
             const res = await request(app)
-                .post("/api/roles/role999/permissions/perm1")
+                .post(`/api/roles/${roleId}/permissions/${permId}`)
                 .send({ actif: true });
 
             expect(res.status).toBe(404);
@@ -400,12 +357,15 @@ describe("Roles routes", () => {
         });
 
         test("retourne 404 si la permission n'existe pas", async () => {
-            const role = { _id: "role1", name: "Admin" };
+            const roleId = new mongoose.Types.ObjectId().toString();
+            const permId = new mongoose.Types.ObjectId().toString();
+
+            const role = { _id: roleId, name: "Admin" };
             Role.findById.mockResolvedValue(role);
             Permission.findById.mockResolvedValue(null);
 
             const res = await request(app)
-                .post("/api/roles/role1/permissions/perm999")
+                .post(`/api/roles/${roleId}/permissions/${permId}`)
                 .send({ actif: true });
 
             expect(res.status).toBe(404);
