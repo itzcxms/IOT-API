@@ -508,7 +508,7 @@ router.get("/comments", auth, async (req, res) => {
     try {
         const comments = await Questionnaire.find(
             { remarques: { $ne: "" } },           // uniquement ceux avec un commentaire
-            { remarques: 1, createdAt: 1, _id: 0 } // projection des champs utiles
+            { remarques: 1, createdAt: 1, _id: 1 } // projection des champs utiles
         ).sort({ createdAt: -1 });               // tri du plus récent au plus ancien
 
         return res.json({
