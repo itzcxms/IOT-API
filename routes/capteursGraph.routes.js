@@ -84,6 +84,38 @@ function buildBaseMatch(modelType, body) {
  *  - type: "sonde" | "toilette"
  * Retourne: Dernière valeur enregistrée avec sa date d'insertion
  */
+/**
+ * @openapi
+ * /api/graphs/capteurs/lastinfo:
+ *   post:
+ *     tags: [Graphs]
+ *     summary: Dernière valeur enregistrée (sonde/toilette)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/GraphLastInfoRequest' }
+ *     responses:
+ *       200:
+ *         description: Dernière valeur + date
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       404:
+ *         description: Aucune donnée trouvée
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/lastinfo",
     auth,
     async (req, res) =>
@@ -169,6 +201,35 @@ router.post("/lastinfo",
     }
 );
 
+/**
+ * @openapi
+ * /api/graphs/capteurs/week:
+ *   post:
+ *     tags: [Graphs]
+ *     summary: Données hebdomadaires (7 jours)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/GraphWeekRequest' }
+ *     responses:
+ *       200:
+ *         description: Données sur 7 jours
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 periodeDebut: { type: string }
+ *                 periodeFin: { type: string }
+ *                 donnees:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     additionalProperties: true
+ */
 router.post("/week", auth, async (req, res) => {
     try {
         const { model, type: modelType } = resolveModel(req.body.type);
@@ -290,6 +351,34 @@ router.post("/week", auth, async (req, res) => {
  *
  * Retourne: Données par heure pour la journée ciblée
  */
+/**
+ * @openapi
+ * /api/graphs/capteurs/today:
+ *   post:
+ *     tags: [Graphs]
+ *     summary: Données journalières (0..23h)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/GraphDayRequest' }
+ *     responses:
+ *       200:
+ *         description: Données par heure
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 date: { type: string }
+ *                 donnees:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     additionalProperties: true
+ */
 router.post(
     "/today",
     auth,
@@ -391,6 +480,30 @@ router.post(
  *
  * Retourne: Liste de tous les mois disponibles groupés par année
  */
+/**
+ * @openapi
+ * /api/graphs/capteurs/month/all:
+ *   get:
+ *     tags: [Graphs]
+ *     summary: Liste des mois disponibles (groupés par année)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema: { type: string, enum: [sonde, toilette] }
+ *     responses:
+ *       200:
+ *         description: Dictionnaire { "2026": ["01","02", ...], ... }
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties:
+ *                 type: array
+ *                 items: { type: string }
+ */
 router.get(
     "/month/all",
     auth,
@@ -449,6 +562,41 @@ router.get(
  *  - filtres: haut, type (sonde) / occupancy (toilette)
  *
  * Retourne: Tous les jours entre start et end avec leur fréquentation
+ */
+/**
+ * @openapi
+ * /api/graphs/capteurs/month:
+ *   post:
+ *     tags: [Graphs]
+ *     summary: Données mensuelles entre deux mois (start..end)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/GraphMonthRequest' }
+ *     responses:
+ *       200:
+ *         description: Données par jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 params: { type: object, additionalProperties: true }
+ *                 donnees:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       jour: { type: string }
+ *                       frequentation: { type: integer }
+ *       400:
+ *         description: Paramètres invalides
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
 router.post(
     "/month",
@@ -560,6 +708,28 @@ router.post(
  *
  * Retourne: Liste de toutes les années disponibles
  */
+/**
+ * @openapi
+ * /api/graphs/capteurs/year/all:
+ *   get:
+ *     tags: [Graphs]
+ *     summary: Liste des années disponibles
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema: { type: string, enum: [sonde, toilette] }
+ *     responses:
+ *       200:
+ *         description: Liste des années
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items: { type: string }
+ */
 router.get(
     "/year/all",
     auth,
@@ -608,6 +778,41 @@ router.get(
  *  - filtres: haut, type (sonde) / occupancy (toilette)
  *
  * Retourne: Données par mois pour l'année spécifiée
+ */
+/**
+ * @openapi
+ * /api/graphs/capteurs/year:
+ *   post:
+ *     tags: [Graphs]
+ *     summary: Données annuelles (fréquentation par mois)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/GraphYearRequest' }
+ *     responses:
+ *       200:
+ *         description: Données par mois
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 annee: { type: integer }
+ *                 donnees:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       mois: { type: string }
+ *                       frequentation: { type: integer }
+ *       400:
+ *         description: Paramètre 'annee' invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
 router.post(
     "/year",

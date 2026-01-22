@@ -6,8 +6,68 @@ const User = require("../models/User.js");
 const router = Router();
 
 /**
- * POST /api/auth/login
- * body: { email, password }
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Connexion utilisateur
+ *     description: Authentifie un utilisateur via email/mot de passe et renvoie un token + refreshToken.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *           examples:
+ *             exemple:
+ *               value:
+ *                 email: "john.doe@mail.com"
+ *                 password: "MonMotDePasse!"
+ *     responses:
+ *       200:
+ *         description: Connexion réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginSuccess'
+ *             examples:
+ *               ok:
+ *                 value:
+ *                   token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                   refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                   user:
+ *                     id: "66b1f8d2c9d1a1b2c3d4e5f6"
+ *                     nom: "Doe"
+ *                     prenom: "John"
+ *                     email: "john.doe@mail.com"
+ *                     role:
+ *                       _id: "66b1f8d2c9d1a1b2c3d4e5f7"
+ *                       nom: "admin"
+ *       401:
+ *         description: Identifiants invalides ou compte suspendu
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *             examples:
+ *               invalid:
+ *                 value:
+ *                   message: "Identifiants ou mot de passe invalides"
+ *               suspended:
+ *                 value:
+ *                   message: "Votre compte à été suspendu."
+ *       500:
+ *         description: Erreur serveur lors de la connexion
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *             examples:
+ *               server:
+ *                 value:
+ *                   message: "Erreur serveur lors de la connexion"
  */
 router.post("/login", async (req, res) => {
     try {

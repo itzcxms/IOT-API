@@ -9,6 +9,34 @@ const router = Router();
 module.exports = router;
 
 // GET /api/users/me
+/**
+ * @openapi
+ * /api/users/me:
+ *   get:
+ *     tags: [Users]
+ *     summary: Profil de l'utilisateur connecté
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profil utilisateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Token manquant/invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ *       403:
+ *         description: Compte inactif
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ */
 router.get("/me", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id)
@@ -24,6 +52,36 @@ router.get("/me", auth, async (req, res) => {
 });
 
 // GET /api/users/all
+/**
+ * @openapi
+ * /api/users/all:
+ *   get:
+ *     tags: [Users]
+ *     summary: Liste des utilisateurs (hors superadmin)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des utilisateurs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ *       403:
+ *         description: Accès refusé (permission users.view)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ */
 router.get("/all", auth, requirePermission("users.view"), async (req, res) => {
     try {
         const users = await User.aggregate([
@@ -58,6 +116,56 @@ router.get("/all", auth, requirePermission("users.view"), async (req, res) => {
  * POST /api/auth/register
  * body: { nom, prenom, email, password, role_id? }
  * -> Route réservée à un admin pour créer un utilisateur.
+ */
+/**
+ * @openapi
+ * /api/users/create:
+ *   post:
+ *     tags: [Users]
+ *     summary: Créer un utilisateur
+ *     description: Route protégée (permission users.create).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Utilisateur créé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 user: { $ref: '#/components/schemas/User' }
+ *       400:
+ *         description: Validation échouée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ *       403:
+ *         description: Accès refusé (permission users.create)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       409:
+ *         description: Email déjà utilisé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
  */
 router.post(
     "/create",
@@ -122,6 +230,45 @@ router.post(
 );
 
 // GET /api/users/view/:id
+/**
+ * @openapi
+ * /api/users/view/{id}:
+ *   get:
+ *     tags: [Users]
+ *     summary: Voir un utilisateur
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Utilisateur trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ *       403:
+ *         description: Accès refusé (permission users.view)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       404:
+ *         description: Utilisateur introuvable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ */
 router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
@@ -140,6 +287,57 @@ router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) 
 });
 
 // PUT /api/users/update/:id
+/**
+ * @openapi
+ * /api/users/update/{id}:
+ *   put:
+ *     tags: [Users]
+ *     summary: Mettre à jour un utilisateur
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Utilisateur mis à jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Requête invalide (ex: rôle invalide)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ *       403:
+ *         description: Accès refusé (permission users.update)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       404:
+ *         description: Utilisateur introuvable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ */
 router.put("/update/:id", auth, requirePermission("users.update"), async (req, res) => {
     try {
         const data = req.body;
@@ -186,6 +384,45 @@ router.put("/update/:id", auth, requirePermission("users.update"), async (req, r
 
 
 // DELETE /api/users/delete/:id
+/**
+ * @openapi
+ * /api/users/delete/{id}:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Supprimer un utilisateur
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Utilisateur supprimé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthError'
+ *       403:
+ *         description: Accès refusé (permission users.delete)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ *       404:
+ *         description: Utilisateur introuvable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorMessage'
+ */
 router.delete("/delete/:id", auth, requirePermission("users.delete"), async (req, res) => {
     try {
         const user = await User.findByIdAndDelete(req.params.id);

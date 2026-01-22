@@ -120,6 +120,23 @@ async function computeStats({ startDate = null, endDate = null, byPeriodMode = n
 // ROUTE 1 : ALL (pas de start/end)
 // GET /api/questionnaires/stats/all
 // --------------------
+/**
+ * @openapi
+ * /api/questionnaires/stats/all:
+ *   get:
+ *     tags: [Questionnaires]
+ *     summary: Statistiques globales (tous les questionnaires)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Stats globales
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ */
 router.get("/stats/all", auth, async (req, res) => {
     try {
         const stats = await computeStats({ startDate: null, endDate: null, byPeriodMode: null });
@@ -138,6 +155,37 @@ router.get("/stats/all", auth, async (req, res) => {
 // POST /api/questionnaires/stats/day
 // Body: { date: "YYYY-MM-DD" }
 // --------------------
+/**
+ * @openapi
+ * /api/questionnaires/stats/day:
+ *   post:
+ *     tags: [Questionnaires]
+ *     summary: Statistiques sur une journée
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [date]
+ *             properties:
+ *               date: { type: string, example: "2026-01-22" }
+ *     responses:
+ *       200:
+ *         description: Stats du jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       400:
+ *         description: Date invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/stats/day", auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
@@ -162,6 +210,37 @@ router.post("/stats/day", auth, async (req, res) => {
 // POST /api/questionnaires/stats/week
 // Body: { date: "YYYY-MM-DD" }  => end = +7 jours
 // --------------------
+/**
+ * @openapi
+ * /api/questionnaires/stats/week:
+ *   post:
+ *     tags: [Questionnaires]
+ *     summary: Statistiques sur 7 jours à partir d'une date
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [date]
+ *             properties:
+ *               date: { type: string, example: "2026-01-22" }
+ *     responses:
+ *       200:
+ *         description: Stats de la semaine
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       400:
+ *         description: Date invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/stats/week", auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
@@ -186,6 +265,37 @@ router.post("/stats/week", auth, async (req, res) => {
 // POST /api/questionnaires/stats/month
 // Body: { date: "YYYY-MM-DD" } => mois/année du jour fourni
 // --------------------
+/**
+ * @openapi
+ * /api/questionnaires/stats/month:
+ *   post:
+ *     tags: [Questionnaires]
+ *     summary: Statistiques sur un mois (mois de la date fournie)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [date]
+ *             properties:
+ *               date: { type: string, example: "2026-01-22" }
+ *     responses:
+ *       200:
+ *         description: Stats mensuelles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       400:
+ *         description: Date invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/stats/month",auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
@@ -209,6 +319,37 @@ router.post("/stats/month",auth, async (req, res) => {
 // POST /api/questionnaires/stats/year
 // Body: { date: "YYYY" } => année du jour fourni
 // --------------------
+/**
+ * @openapi
+ * /api/questionnaires/stats/year:
+ *   post:
+ *     tags: [Questionnaires]
+ *     summary: Statistiques sur une année (année de la date fournie)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [date]
+ *             properties:
+ *               date: { type: string, example: "2026-01-01" }
+ *     responses:
+ *       200:
+ *         description: Stats annuelles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       400:
+ *         description: Date invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/stats/year", auth, async (req, res) => {
     try {
         const raw = parseDateOrNull(req.body?.date);
@@ -240,65 +381,129 @@ router.post("/stats/year", auth, async (req, res) => {
  *  remarques
  * }
  */
+/**
+ * @openapi
+ * /api/questionnaires:
+ *   post:
+ *     tags: [Questionnaires]
+ *     summary: Créer un questionnaire
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/QuestionnaireCreateRequest' }
+ *     responses:
+ *       201:
+ *         description: Questionnaire enregistré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 data: { $ref: '#/components/schemas/Questionnaire' }
+ *       400:
+ *         description: Validation échouée
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/",
     auth,
     async (req, res) => {
-    try {
-        const {
-            satisfactionAire,
-            satisfactionSecurite,
-            satisfactionServices,
-            sourcesConnaissance,
-            autreSource,
-            remarques,
-        } = req.body;
+        try {
+            const {
+                satisfactionAire,
+                satisfactionSecurite,
+                satisfactionServices,
+                sourcesConnaissance,
+                autreSource,
+                remarques,
+            } = req.body;
 
-        // Validation minimale (en plus des enums/required Mongoose)
-        if (!satisfactionAire || !satisfactionSecurite || !satisfactionServices) {
-            return res.status(400).json({
-                message:
-                    "Champs requis manquants: satisfactionAire, satisfactionSecurite, satisfactionServices",
+            // Validation minimale (en plus des enums/required Mongoose)
+            if (!satisfactionAire || !satisfactionSecurite || !satisfactionServices) {
+                return res.status(400).json({
+                    message:
+                        "Champs requis manquants: satisfactionAire, satisfactionSecurite, satisfactionServices",
+                });
+            }
+
+            // Sécuriser le type du tableau
+            const safeSources = Array.isArray(sourcesConnaissance)
+                ? sourcesConnaissance
+                : [];
+
+            const enquete = await Questionnaire.create({
+                satisfactionAire,
+                satisfactionSecurite,
+                satisfactionServices,
+                sourcesConnaissance: safeSources,
+                autreSource: autreSource ?? "",
+                remarques: remarques ?? "",
+            });
+
+            return res.status(201).json({
+                message: "Enquête enregistrée avec succès",
+                data: enquete,
+            });
+        } catch (err) {
+            // Erreurs de validation Mongoose (enum/required)
+            if (err?.name === "ValidationError") {
+                return res.status(400).json({
+                    message: "Validation échouée",
+                    details: err.errors,
+                });
+            }
+
+            return res.status(500).json({
+                message: "Erreur serveur",
+                error: err?.message ?? "Unknown error",
             });
         }
-
-        // Sécuriser le type du tableau
-        const safeSources = Array.isArray(sourcesConnaissance)
-            ? sourcesConnaissance
-            : [];
-
-        const enquete = await Questionnaire.create({
-            satisfactionAire,
-            satisfactionSecurite,
-            satisfactionServices,
-            sourcesConnaissance: safeSources,
-            autreSource: autreSource ?? "",
-            remarques: remarques ?? "",
-        });
-
-        return res.status(201).json({
-            message: "Enquête enregistrée avec succès",
-            data: enquete,
-        });
-    } catch (err) {
-        // Erreurs de validation Mongoose (enum/required)
-        if (err?.name === "ValidationError") {
-            return res.status(400).json({
-                message: "Validation échouée",
-                details: err.errors,
-            });
-        }
-
-        return res.status(500).json({
-            message: "Erreur serveur",
-            error: err?.message ?? "Unknown error",
-        });
-    }
-});
+    });
 
 // --------------------
 // ROUTE : Récupération des commentaires + date
 // GET /api/questionnaires/comments
 // --------------------
+/**
+ * @openapi
+ * /api/questionnaires/comments:
+ *   get:
+ *     tags: [Questionnaires]
+ *     summary: Récupérer les commentaires (remarques) + date
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des commentaires
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total: { type: integer }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       remarques: { type: string }
+ *                       createdAt: { type: string }
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.get("/comments", auth, async (req, res) => {
     try {
         const comments = await Questionnaire.find(

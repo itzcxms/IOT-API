@@ -7,6 +7,28 @@ const router = Router();
 module.exports = router;
 
 // GET - Récupérer tous les distributeurs de savon
+/**
+ * @openapi
+ * /api/savon:
+ *   get:
+ *     tags: [Savon]
+ *     summary: Lister tous les distributeurs de savon
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des distributeurs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items: { $ref: '#/components/schemas/Savon' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ */
 router.get("/", auth, async (req, res) => {
     try {
         const savons = await Savon.find();
@@ -53,6 +75,36 @@ router.get("/", auth, async (req, res) => {
 // });
 
 // POST - Créer un nouveau distributeur de savon
+/**
+ * @openapi
+ * /api/savon:
+ *   post:
+ *     tags: [Savon]
+ *     summary: Créer un distributeur de savon
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/SavonCreateRequest' }
+ *     responses:
+ *       201:
+ *         description: Distributeur créé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Savon' }
+ *       400:
+ *         description: Requête invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ */
 router.post("/", auth, async (req, res) => {
     try {
         // Récupérer le compteur actuel de présence
@@ -81,6 +133,46 @@ router.post("/", auth, async (req, res) => {
 });
 
 // PUT - Mettre à jour un distributeur
+/**
+ * @openapi
+ * /api/savon/{id}:
+ *   put:
+ *     tags: [Savon]
+ *     summary: Mettre à jour un distributeur
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/SavonUpdateRequest' }
+ *     responses:
+ *       200:
+ *         description: Distributeur mis à jour
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Savon' }
+ *       400:
+ *         description: Requête invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       404:
+ *         description: Distributeur non trouvé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.put("/:id", auth, async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
@@ -105,6 +197,45 @@ router.put("/:id", auth, async (req, res) => {
 });
 
 // POST - Marquer un remplissage
+/**
+ * @openapi
+ * /api/savon/{id}/remplissage:
+ *   post:
+ *     tags: [Savon]
+ *     summary: Marquer un remplissage (reset seuil actuel et compteur)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Remplissage effectué
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 savon: { $ref: '#/components/schemas/Savon' }
+ *       400:
+ *         description: Requête invalide
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       404:
+ *         description: Distributeur non trouvé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/:id/remplissage", auth, async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
@@ -134,6 +265,36 @@ router.post("/:id/remplissage", auth, async (req, res) => {
 });
 
 // DELETE - Supprimer un distributeur
+/**
+ * @openapi
+ * /api/savon/{id}:
+ *   delete:
+ *     tags: [Savon]
+ *     summary: Supprimer un distributeur
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Distributeur supprimé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       404:
+ *         description: Distributeur non trouvé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.delete("/:id", auth, async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
@@ -149,6 +310,36 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 // GET - Vérifier si une alerte doit être envoyée
+/**
+ * @openapi
+ * /api/savon/{id}/check-alert:
+ *   get:
+ *     tags: [Savon]
+ *     summary: Vérifier si une alerte doit être envoyée (seuil alert)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Statut d'alerte + estimation
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/SavonCheckAlertResponse' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       404:
+ *         description: Distributeur non trouvé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.get("/:id/check-alert", auth, async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);

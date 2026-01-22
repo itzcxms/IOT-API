@@ -11,6 +11,28 @@ module.exports = router;
 
 // GET /api/roles/all
 // récupere les roles contenant le poids entre 1 a 100 uniquement.
+/**
+ * @openapi
+ * /api/roles/all:
+ *   get:
+ *     tags: [Roles]
+ *     summary: Liste des rôles (poids 1..100)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des rôles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items: { $ref: '#/components/schemas/Role' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ */
 router.get("/all", auth, async (req, res) => {
     try {
         const roles = await Role.find({
@@ -25,6 +47,45 @@ router.get("/all", auth, async (req, res) => {
 });
 
 // POST /api/roles/create
+/**
+ * @openapi
+ * /api/roles/create:
+ *   post:
+ *     tags: [Roles]
+ *     summary: Créer un rôle
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/RoleCreateRequest' }
+ *     responses:
+ *       201:
+ *         description: Rôle créé (et liaisons RolePermission initialisées)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 role: { $ref: '#/components/schemas/Role' }
+ *                 permissions_linked: { type: integer }
+ *       400:
+ *         description: Validation échouée
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       403:
+ *         description: Accès refusé (permission superadmin)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.post("/create", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         // 1) Création du rôle
@@ -63,6 +124,51 @@ req.body = {
   "permissions": ["<permissionId1>", "<permissionId2>"]
 }
  */
+/**
+ * @openapi
+ * /api/roles/update/{id}:
+ *   put:
+ *     tags: [Roles]
+ *     summary: Mettre à jour un rôle
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/RoleUpdateRequest' }
+ *     responses:
+ *       200:
+ *         description: Rôle mis à jour
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Role' }
+ *       400:
+ *         description: Validation échouée
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       403:
+ *         description: Accès refusé (permission superadmin)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       404:
+ *         description: Rôle introuvable
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.put("/update/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
@@ -82,6 +188,41 @@ router.put("/update/:id", auth, requirePermission("superadmin"), async (req, res
 });
 
 // DELETE /api/roles/delete/:id
+/**
+ * @openapi
+ * /api/roles/delete/{id}:
+ *   delete:
+ *     tags: [Roles]
+ *     summary: Supprimer un rôle
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Rôle supprimé
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       403:
+ *         description: Accès refusé (permission superadmin)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       404:
+ *         description: Rôle introuvable
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.delete("/delete/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const role = await Role.findByIdAndDelete(req.params.id);
@@ -158,6 +299,40 @@ router.delete("/delete/:id", auth, requirePermission("superadmin"), async (req, 
 // );
 
 // GET /api/roles/:id/permissions
+/**
+ * @openapi
+ * /api/roles/{id}/permissions:
+ *   get:
+ *     tags: [Roles]
+ *     summary: Récupérer les permissions d'un rôle (groupées par catégorie)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Permissions groupées (format tableau)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: array
+ *                 items: {}
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
 router.get(
     "/:id/permissions",
     auth,
@@ -194,6 +369,63 @@ router.get(
  * Modifier la valeur des permissions: actif = true/false à un rôle
  * POST /api/roles/:roleId/permissions/:permId
  * Body: { "actif": true/false}
+ */
+/**
+ * @openapi
+ * /api/roles/{roleid}/permissions/{permid}:
+ *   post:
+ *     tags: [Roles]
+ *     summary: Activer/Désactiver une permission pour un rôle
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleid
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: permid
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [actif]
+ *             properties:
+ *               actif: { type: boolean, example: true }
+ *     responses:
+ *       200:
+ *         description: Lien rôle/permission mis à jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 data: { type: object, additionalProperties: true }
+ *       400:
+ *         description: Requête invalide (actif doit être booléen)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       401:
+ *         description: Non authentifié
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/AuthError' }
+ *       403:
+ *         description: Accès refusé (permission roles.assign_permissions)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ *       404:
+ *         description: Rôle ou permission introuvable
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
 router.post(
     "/:roleid/permissions/:permid",
