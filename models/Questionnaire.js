@@ -8,17 +8,17 @@ const QuestionnaireSchema = new mongoose.Schema({
     },
     satisfactionAire: {
         type: String,
-        enum: ["mauvais", "passable", "bon", "excellent"],
+        enum: ["tres-satisfait", "satisfait", "peu-satisfait"],
         required: true
     },
     satisfactionSecurite: {
         type: String,
-        enum: ["mauvais", "passable", "bon", "excellent"],
+        enum: ["tres-satisfait", "satisfait", "peu-satisfait"],
         required: true
     },
     satisfactionServices: {
         type: String,
-        enum: ["mauvais", "passable", "bon", "excellent"],
+        enum: ["tres-satisfait", "satisfait", "peu-satisfait"],
         required: true
     },
     sourcesConnaissance: {

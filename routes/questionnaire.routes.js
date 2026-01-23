@@ -415,9 +415,7 @@ router.post("/stats/year", auth, async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.post("/",
-    auth,
-    async (req, res) => {
+router.post("/", async (req, res) => {
         try {
             const {
                 satisfactionAire,
@@ -504,7 +502,7 @@ router.post("/",
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.get("/comments", auth, async (req, res) => {
+router.get("/comments", async (req, res) => {
     try {
         const comments = await Questionnaire.find(
             { remarques: { $ne: "" } },           // uniquement ceux avec un commentaire

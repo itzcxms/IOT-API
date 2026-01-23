@@ -314,7 +314,7 @@ router.get("/view/:id", auth, requirePermission("users.view"), async (req, res) 
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Requête invalide (ex: rôle invalide)
+ *         description: 'Requête invalide (ex: rôle invalide)'
  *         content:
  *           application/json:
  *             schema:

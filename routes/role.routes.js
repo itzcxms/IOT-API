@@ -9,8 +9,6 @@ const requirePermission = require("../middleware/requirePermission.js");
 const router = Router();
 module.exports = router;
 
-// GET /api/roles/all
-// récupere les roles contenant le poids entre 1 a 100 uniquement.
 /**
  * @openapi
  * /api/roles/all:
@@ -46,7 +44,6 @@ router.get("/all", auth, async (req, res) => {
     }
 });
 
-// POST /api/roles/create
 /**
  * @openapi
  * /api/roles/create:
@@ -116,14 +113,6 @@ router.post("/create", auth, requirePermission("superadmin"), async (req, res) =
     }
 });
 
-/* PUT /api/roles/update/:id
-req.body = {
-  "name": "Admin",
-  "description": "Accès complet",
-  "poids": 10,
-  "permissions": ["<permissionId1>", "<permissionId2>"]
-}
- */
 /**
  * @openapi
  * /api/roles/update/{id}:
@@ -169,6 +158,7 @@ req.body = {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
+
 router.put("/update/:id", auth, requirePermission("superadmin"), async (req, res) => {
     try {
         const role = await Role.findByIdAndUpdate(req.params.id, req.body, {

@@ -495,7 +495,7 @@ router.post(
  *         schema: { type: string, enum: [sonde, toilette] }
  *     responses:
  *       200:
- *         description: Dictionnaire { "2026": ["01","02", ...], ... }
+ *         description: 'Dictionnaire { "2026": ["01","02", ...], ... }'
  *         content:
  *           application/json:
  *             schema:
