@@ -8,7 +8,7 @@ module.exports = router;
 // --------------------
 // Helpers (à mettre une seule fois en haut du fichier)
 // --------------------
-const satisfactionLevels = ["mauvais", "passable", "bon", "excellent"];
+const satisfactionLevels = ["tres-satisfaisant", "satisfaisant", "peu-satisfaisant"];
 
 function parseDateOrNull(v) {
     if (!v) return null;
@@ -208,7 +208,7 @@ router.post("/stats/day", auth, async (req, res) => {
 // --------------------
 // ROUTE 3 : WEEK
 // POST /api/questionnaires/stats/week
-// Body: { date: "YYYY-MM-DD" }  => end = +7 jours
+// Body: { date: "YYYY-MM-DD" }  => start = -7 jours
 // --------------------
 /**
  * @openapi
@@ -246,8 +246,8 @@ router.post("/stats/week", auth, async (req, res) => {
         const raw = parseDateOrNull(req.body?.date);
         if (!raw) return res.status(400).json({ message: "Paramètre date invalide (YYYY-MM-DD)" });
 
-        const start = startOfDay(raw);
-        const end = addDaysUTC(start, 7);
+        const end = startOfDay(raw);
+        const start = addDaysUTC(end, -7);
 
         const stats = await computeStats({ startDate: start, endDate: end, byPeriodMode: "week" });
 
