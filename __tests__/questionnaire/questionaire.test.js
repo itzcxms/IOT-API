@@ -286,7 +286,7 @@ describe("Questionnaire routes", () => {
 
             expect(Questionnaire.find).toHaveBeenCalledWith(
                 { remarques: { $ne: "" } },
-                { remarques: 1, createdAt: 1, _id: 0 }
+                { remarques: 1, createdAt: 1, _id: 1 }
             );
             expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
             expect(res.status).toBe(200);
