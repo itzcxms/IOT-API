@@ -238,7 +238,7 @@ router.delete("/delete/:id", auth, requirePermission("superadmin"), async (req, 
 // router.post(
 //     "/:id/permissions",
 //     auth,
-//     requirePermission("roles.assign_permissions"),
+//     requirePermission("permissions.update"),
 //     async (req, res) => {
 //         try {
 //             const { permission_ids = [] } = req.body;
@@ -420,9 +420,8 @@ router.get(
 router.post(
     "/:roleid/permissions/:permid",
     auth,
-    requirePermission("roles.assign_permissions"),
-    async (req, res) => {
-        try {
+    requirePermission("permissions.update"),
+    async (req, res) => {        try {
             const { actif } = req.body;
             const { roleid, permid } = req.params;
 
