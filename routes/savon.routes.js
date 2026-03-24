@@ -29,7 +29,7 @@ module.exports = router;
  *           application/json:
  *             schema: { $ref: '#/components/schemas/AuthError' }
  */
-router.get("/", auth, async (req, res) => {
+router.get("/", async (req, res) => {
     try {
         const savons = await Savon.find();
         res.json(savons);
@@ -107,22 +107,30 @@ router.get("/", auth, async (req, res) => {
  */
 router.post("/", auth, async (req, res) => {
     try {
+        const { contenance, name, seuils, consommationParPassage } = req.body;
+
+        if (!contenance || !name || !seuils?.alert) {
+            return res.status(400).json({
+                message: "Champs requis manquants : contenance, name, seuils.alert",
+            });
+        }
+
         // Récupérer le compteur actuel de présence
         const presence = await Presence.findOne().sort({ createdAt: -1 });
         const compteurActuel = presence ? presence.uplink_message.decoded_payload.entrees : 0;
 
         const savon = new Savon({
-            contenance: req.body.contenance,
+            contenance,
             seuils: {
-                actuel: req.body.contenance, // Au début, plein
-                alert: req.body.seuils.alert
+                actuel: contenance, // Au début, plein
+                alert: seuils.alert,
             },
-            name: req.body.name,
+            name,
             dernierRemplissage: {
                 date: new Date(),
-                compteurPassages: compteurActuel
+                compteurPassages: compteurActuel,
             },
-            consommationParPassage: req.body.consommationParPassage || 1.5
+            consommationParPassage: consommationParPassage || 1.5,
         });
 
         const nouveauSavon = await savon.save();
@@ -236,7 +244,7 @@ router.put("/:id", auth, async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.post("/:id/remplissage", auth, async (req, res) => {
+router.post("/:id/remplissage", async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
         if (!savon) {
