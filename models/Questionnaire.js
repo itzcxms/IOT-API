@@ -29,10 +29,6 @@ const QuestionnaireSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    remarques: {
-        type: String,
-        default: ""
-    }
 }, {
     timestamps: true
 });

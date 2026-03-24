@@ -51,7 +51,7 @@ router.get("/", auth, async (req, res) => {
 //
 //         // Calculer le nombre de passages depuis le dernier remplissage
 //         const passages = presence
-//             ? presence.line_1_total_in - savon.dernierRemplissage.compteurPassages
+//             ? presence.uplink_message.decoded_payload.entrees - savon.dernierRemplissage.compteurPassages
 //             : 0;
 //
 //         // Calculer la contenance estimée actuelle
@@ -109,7 +109,7 @@ router.post("/", auth, async (req, res) => {
     try {
         // Récupérer le compteur actuel de présence
         const presence = await Presence.findOne().sort({ createdAt: -1 });
-        const compteurActuel = presence ? presence.line_1_total_in : 0;
+        const compteurActuel = presence ? presence.uplink_message.decoded_payload.entrees : 0;
 
         const savon = new Savon({
             contenance: req.body.contenance,
@@ -245,7 +245,7 @@ router.post("/:id/remplissage", auth, async (req, res) => {
 
         // Récupérer le compteur actuel de présence
         const presence = await Presence.findOne().sort({ createdAt: -1 });
-        const compteurActuel = presence ? presence.line_1_total_in : 0;
+        const compteurActuel = presence ? presence.uplink_message.decoded_payload.entrees : 0;
 
         // Réinitialiser le distributeur
         savon.seuils.actuel = savon.contenance; // Plein
@@ -349,7 +349,7 @@ router.get("/:id/check-alert", auth, async (req, res) => {
 
         const presence = await Presence.findOne().sort({ createdAt: -1 });
         const passages = presence
-            ? presence.line_1_total_in - savon.dernierRemplissage.compteurPassages
+            ? presence.uplink_message.decoded_payload.entrees - savon.dernierRemplissage.compteurPassages
             : 0;
 
         const contenanceEstimee = Math.max(

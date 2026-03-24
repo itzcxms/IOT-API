@@ -416,57 +416,106 @@ router.post("/stats/year", auth, async (req, res) => {
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
 router.post("/", async (req, res) => {
-        try {
-            const {
-                satisfactionAire,
-                satisfactionSecurite,
-                satisfactionServices,
-                sourcesConnaissance,
-                autreSource,
-                remarques,
-            } = req.body;
+    try {
+        const {
+            satisfactionAire,
+            satisfactionSecurite,
+            satisfactionServices,
+            sourcesConnaissance,
+            autreSource,
+            remarques,
+        } = req.body;
 
-            // Validation minimale (en plus des enums/required Mongoose)
-            if (!satisfactionAire || !satisfactionSecurite || !satisfactionServices) {
-                return res.status(400).json({
-                    message:
-                        "Champs requis manquants: satisfactionAire, satisfactionSecurite, satisfactionServices",
-                });
-            }
-
-            // Sécuriser le type du tableau
-            const safeSources = Array.isArray(sourcesConnaissance)
-                ? sourcesConnaissance
-                : [];
-
-            const enquete = await Questionnaire.create({
-                satisfactionAire,
-                satisfactionSecurite,
-                satisfactionServices,
-                sourcesConnaissance: safeSources,
-                autreSource: autreSource ?? "",
-                remarques: remarques ?? "",
-            });
-
-            return res.status(201).json({
-                message: "Enquête enregistrée avec succès",
-                data: enquete,
-            });
-        } catch (err) {
-            // Erreurs de validation Mongoose (enum/required)
-            if (err?.name === "ValidationError") {
-                return res.status(400).json({
-                    message: "Validation échouée",
-                    details: err.errors,
-                });
-            }
-
-            return res.status(500).json({
-                message: "Erreur serveur",
-                error: err?.message ?? "Unknown error",
+        // Validation minimale (en plus des enums/required Mongoose)
+        if (!satisfactionAire || !satisfactionSecurite || !satisfactionServices) {
+            return res.status(400).json({
+                message:
+                    "Champs requis manquants: satisfactionAire, satisfactionSecurite, satisfactionServices",
             });
         }
-    });
+
+        // Sécuriser le type du tableau
+        const safeSources = Array.isArray(sourcesConnaissance)
+            ? sourcesConnaissance
+            : [];
+
+        const enquete = await Questionnaire.create({
+            satisfactionAire,
+            satisfactionSecurite,
+            satisfactionServices,
+            sourcesConnaissance: safeSources,
+            autreSource: autreSource ?? "",
+            remarques: remarques ?? "",
+        });
+
+        return res.status(201).json({
+            message: "Enquête enregistrée avec succès",
+            data: enquete,
+        });
+    } catch (err) {
+        // Erreurs de validation Mongoose (enum/required)
+        if (err?.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Validation échouée",
+                details: err.errors,
+            });
+        }
+
+        return res.status(500).json({
+            message: "Erreur serveur",
+            error: err?.message ?? "Unknown error",
+        });
+    }
+});
+
+// --------------------
+// ROUTE : Nombre de formulaires envoyés sur les 7 derniers jours
+// GET /api/questionnaires/stats/last7days
+// --------------------
+/**
+ * @openapi
+ * /api/questionnaires/stats/last7days:
+ *   get:
+ *     tags: [Questionnaires]
+ *     summary: Nombre total de formulaires envoyés sur les 7 derniers jours
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Total des formulaires sur les 7 derniers jours
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total: { type: integer }
+ *                 from: { type: string }
+ *                 to: { type: string }
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorMessage' }
+ */
+router.get("/stats/last7days", auth, async (req, res) => {
+    try {
+        const now = new Date();
+        const end = addDaysUTC(startOfDay(now), 1); // minuit demain → inclut toute la journée d'aujourd'hui
+        const start = addDaysUTC(end, -8);
+
+        const total = await Questionnaire.countDocuments({
+            createdAt: { $gte: start, $lt: end },
+        });
+
+        return res.json({
+            total,
+            from: start.toISOString(),
+            to: end.toISOString(),
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
 
 // --------------------
 // ROUTE : Récupération des commentaires + date
@@ -502,7 +551,7 @@ router.post("/", async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.get("/comments", async (req, res) => {
+router.get("/comments", auth, async (req, res) => {
     try {
         const comments = await Questionnaire.find(
             { remarques: { $ne: "" } },           // uniquement ceux avec un commentaire

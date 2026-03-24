@@ -55,17 +55,25 @@ client.on('message', async (topic, payload) => {
                 // }
                 break;
             case 'vs133-1':
-                const {
-                    line_1_total_in,
-                    line_1_total_out,
-                    line_1_period_in,
-                    line_1_period_out
-                } = p;
+                if (!decoded_payload || (decoded_payload.entrees === undefined && decoded_payload.sorties === undefined)) {
+                    break;
+                }
                 const presence = await Presence.create({
-                    line_1_total_in: line_1_total_in,
-                    line_1_total_out: line_1_total_out,
-                    line_1_period_in: line_1_period_in,
-                    line_1_period_out: line_1_period_out
+                    end_device_ids:  data.end_device_ids,
+                    correlation_ids: data.correlation_ids,
+                    received_at:     data.received_at,
+                    uplink_message: {
+                        session_key_id:   uplink_message.session_key_id,
+                        f_port:           uplink_message.f_port,
+                        frm_payload:      frm_payload,
+                        received_at:      uplink_message.received_at,
+                        consumed_airtime: uplink_message.consumed_airtime,
+                        decoded_payload: {
+                            entrees: decoded_payload?.entrees ?? 0,
+                            sorties: decoded_payload?.sorties ?? 0,
+                            periode: decoded_payload?.periode ?? 0,
+                        },
+                    },
                 })
                 // if(process.env.DEBUG) {
                 //     console.log("Creation de vs133-1:", presence);
@@ -81,6 +89,5 @@ client.on('message', async (topic, payload) => {
         console.error('Erreur traitement message MQTT :', err);
     }
 });
-
 
 module.exports = client;

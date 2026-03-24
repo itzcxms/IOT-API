@@ -4,6 +4,8 @@ const morgan = require("morgan");
 const dotenv = require("dotenv");
 dotenv.config();
 
+const { startSimulator } = require("./addons/presenceSimulator");
+
 const connectDB = require("./config/db.js");
 
 // Swagger
@@ -274,6 +276,8 @@ connectDB(process.env.MONGO_URI)
             console.log(`Server on http://localhost:${PORT}`);
             console.log(`Swagger on http://localhost:${PORT}/docs`);
         });
+
+        startSimulator();
     })
     .catch((err) => {
         console.error("Erreur de connexion à la base :", err);
