@@ -29,7 +29,7 @@ module.exports = router;
  *           application/json:
  *             schema: { $ref: '#/components/schemas/AuthError' }
  */
-router.get("/", auth, async (req, res) => {
+router.get("/", async (req, res) => {
     try {
         const savons = await Savon.find();
         res.json(savons);
@@ -51,7 +51,7 @@ router.get("/", auth, async (req, res) => {
 //
 //         // Calculer le nombre de passages depuis le dernier remplissage
 //         const passages = presence
-//             ? presence.line_1_total_in - savon.dernierRemplissage.compteurPassages
+//             ? presence.uplink_message.decoded_payload.entrees - savon.dernierRemplissage.compteurPassages
 //             : 0;
 //
 //         // Calculer la contenance estimée actuelle
@@ -109,7 +109,7 @@ router.post("/", auth, async (req, res) => {
     try {
         // Récupérer le compteur actuel de présence
         const presence = await Presence.findOne().sort({ createdAt: -1 });
-        const compteurActuel = presence ? presence.line_1_total_in : 0;
+        const compteurActuel = presence ? presence.uplink_message.decoded_payload.entrees : 0;
 
         const savon = new Savon({
             contenance: req.body.contenance,
@@ -236,7 +236,7 @@ router.put("/:id", auth, async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.post("/:id/remplissage", auth, async (req, res) => {
+router.post("/:id/remplissage", async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
         if (!savon) {
@@ -245,7 +245,7 @@ router.post("/:id/remplissage", auth, async (req, res) => {
 
         // Récupérer le compteur actuel de présence
         const presence = await Presence.findOne().sort({ createdAt: -1 });
-        const compteurActuel = presence ? presence.line_1_total_in : 0;
+        const compteurActuel = presence ? presence.uplink_message.decoded_payload.entrees : 0;
 
         // Réinitialiser le distributeur
         savon.seuils.actuel = savon.contenance; // Plein
@@ -349,7 +349,7 @@ router.get("/:id/check-alert", auth, async (req, res) => {
 
         const presence = await Presence.findOne().sort({ createdAt: -1 });
         const passages = presence
-            ? presence.line_1_total_in - savon.dernierRemplissage.compteurPassages
+            ? presence.uplink_message.decoded_payload.entrees - savon.dernierRemplissage.compteurPassages
             : 0;
 
         const contenanceEstimee = Math.max(
