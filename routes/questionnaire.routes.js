@@ -497,7 +497,7 @@ router.post("/", async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.get("/stats/last7days", async (req, res) => {
+router.get("/stats/last7days", auth, async (req, res) => {
     try {
         const now = new Date();
         const end = addDaysUTC(startOfDay(now), 1); // minuit demain → inclut toute la journée d'aujourd'hui
@@ -551,7 +551,7 @@ router.get("/stats/last7days", async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.get("/comments", async (req, res) => {
+router.get("/comments", auth, async (req, res) => {
     try {
         const comments = await Questionnaire.find(
             { remarques: { $ne: "" } },           // uniquement ceux avec un commentaire

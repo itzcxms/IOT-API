@@ -29,7 +29,7 @@ module.exports = router;
  *           application/json:
  *             schema: { $ref: '#/components/schemas/AuthError' }
  */
-router.get("/", async (req, res) => {
+router.get("/", auth, async (req, res) => {
     try {
         const savons = await Savon.find();
         res.json(savons);
@@ -236,7 +236,7 @@ router.put("/:id", auth, async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.post("/:id/remplissage", async (req, res) => {
+router.post("/:id/remplissage", auth, async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
         if (!savon) {

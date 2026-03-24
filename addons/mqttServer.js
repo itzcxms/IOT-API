@@ -56,7 +56,6 @@ client.on('message', async (topic, payload) => {
                 break;
             case 'vs133-1':
                 if (!decoded_payload || (decoded_payload.entrees === undefined && decoded_payload.sorties === undefined)) {
-                    console.warn("[MQTT] vs133-1 : decoded_payload manquant ou incomplet, message ignoré");
                     break;
                 }
                 const presence = await Presence.create({
@@ -90,6 +89,5 @@ client.on('message', async (topic, payload) => {
         console.error('Erreur traitement message MQTT :', err);
     }
 });
-
 
 module.exports = client;

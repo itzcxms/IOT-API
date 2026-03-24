@@ -373,6 +373,7 @@ router.post("/week", auth, async (req, res) => {
  *               type: object
  *               properties:
  *                 date: { type: string }
+ *                 total: { type: integer }
  *                 donnees:
  *                   type: array
  *                   items:
@@ -459,8 +460,11 @@ router.post(
                 allHours.push(hourData);
             }
 
+            const total = allHours.reduce((sum, h) => sum + (h.frequentation || 0), 0);
+
             return res.json({
                 date: `${year}-${pad2(month + 1)}-${pad2(day)}`,
+                total,
                 donnees: allHours,
             });
         } catch (e) {
