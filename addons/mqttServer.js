@@ -38,9 +38,9 @@ client.on('message', async (topic, payload) => {
                     distance: decoded_payload.distance,
                     occupancy: decoded_payload.occupancy,
                 })
-                // if(process.env.DEBUG) {
-                //     console.log("Creation de toilette:", toilette);
-                // }
+                if(process.env.DEBUG) {
+                    console.log("Creation de toilette:", toilette);
+                }
                 break;
             case 'bridge-chaumont':
                 const sonde = await Sonde.create({
@@ -50,9 +50,9 @@ client.on('message', async (topic, payload) => {
                     temperature: decoded_payload.temperature,
                     hygrometrie: decoded_payload.hygrometrie,
                 })
-                // if(process.env.DEBUG) {
-                //     console.log("Creation de sonde:", sonde);
-                // }
+                if(process.env.DEBUG) {
+                    console.log("Creation de sonde:", sonde);
+                }
                 break;
             case 'vs133-1':
                 if (!decoded_payload || (decoded_payload.entrees === undefined && decoded_payload.sorties === undefined)) {
@@ -75,15 +75,15 @@ client.on('message', async (topic, payload) => {
                         },
                     },
                 })
-                // if(process.env.DEBUG) {
-                //     console.log("Creation de vs133-1:", presence);
-                // }
+                if(process.env.DEBUG) {
+                    console.log("Creation de vs133-1:", presence);
+                }
                 break;
-            // default:
-            //     if(process.env.DEBUG) {
-            //         console.log('[DEVICE_INCONNU]', device_id, p, decoded_payload);
-            //     }
-            //     break;
+            default:
+                if(process.env.DEBUG) {
+                    console.log('[DEVICE_INCONNU]', device_id, p, decoded_payload);
+                }
+                break;
         }
     } catch (err) {
         console.error('Erreur traitement message MQTT :', err);
