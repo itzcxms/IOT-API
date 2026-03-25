@@ -4,7 +4,7 @@ const morgan = require("morgan");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const { startSimulator } = require("./addons/presenceSimulator");
+const { startSimulator } = require("./addons/Presencesimulator");
 
 const connectDB = require("./config/db.js");
 
