@@ -175,6 +175,14 @@ router.post(
         try {
             const { nom, prenom, email, password, role_id } = req.body;
 
+            // Validation du mot de passe
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-_#])[A-Za-z\d@$!%*?&\-_#]{12,}$/;
+            if (!passwordRegex.test(password)) {
+                return res.status(400).json({
+                    message: "Le mot de passe doit contenir au moins 12 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&-_#)."
+                });
+            }
+
             if (!nom || !prenom || !email || !password) {
                 return res.status(400).json({ message: "Champs requis manquants" });
             }
@@ -197,8 +205,7 @@ router.post(
                 return res.status(404).json({ message: "Aucun rôle disponible" });
             }
 
-            // 10 ou 12 est généralement suffisant, mais garde 15 si tu le souhaites
-            const hash = await bcrypt.hash(password, 10);
+            const hash = await bcrypt.hash(password, 12);
 
             const user = await User.create({
                 nom,
