@@ -244,28 +244,31 @@ router.put("/:id", auth, async (req, res) => {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorMessage' }
  */
-router.post("/:id/remplissage", async (req, res) => {
+router.post("/:id/remplissage", auth, async (req, res) => {
     try {
         const savon = await Savon.findById(req.params.id);
         if (!savon) {
             return res.status(404).json({ message: "Distributeur non trouvé" });
         }
 
-        // Récupérer le compteur actuel de présence
         const presence = await Presence.findOne().sort({ createdAt: -1 });
-        const compteurActuel = presence ? presence.uplink_message.decoded_payload.entrees : 0;
+        const compteurActuel = presence
+            ? presence.uplink_message.decoded_payload.entrees
+            : 0;
 
         // Réinitialiser le distributeur
-        savon.seuils.actuel = savon.contenance; // Plein
+        savon.seuils.actuel = savon.contenance;
         savon.dernierRemplissage = {
             date: new Date(),
-            compteurPassages: compteurActuel
+            compteurPassages: compteurActuel, // ← passages = entrees - compteurActuel = 0
         };
 
         const savonMisAJour = await savon.save();
         res.json({
             message: "Remplissage effectué avec succès",
-            savon: savonMisAJour
+            savon: savonMisAJour,
+            passagesRemisAZero: true,
+            compteurReference: compteurActuel,
         });
     } catch (error) {
         res.status(400).json({ message: error.message });
